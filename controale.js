@@ -286,26 +286,6 @@ export default function Controale({
 
         return folderPath
     }
-
-    const fetchDataControale = async (controlId) => {
-        const items = await getControls(controlId)
-
-        if (items.length > 0) {
-            // const header = 'crot,codbare,data,cant\n'
-            const header = ''
-            const rows = items.map((item) => {
-                const d = formatDate(datac)
-                return `${item.crot},${item.codbare},${d},${item.cant}\n`
-            })
-
-            const csvString = `${header}${rows.join('')}`
-            return csvString
-        }
-
-        return ''
-    }
-
-
     function createRow(row, rowIndex) {
         let addColIndex = 0
         var entries = [
