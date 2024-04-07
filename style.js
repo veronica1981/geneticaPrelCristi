@@ -1,0 +1,183 @@
+import { StyleSheet } from 'react-native'
+
+const styles = StyleSheet.create({
+    containerAll: {
+        flexDirection: 'column',
+        marginLeft: 5,
+        marginRight: 5,
+        borderWidth: 0,
+        borderColor: '#ddd',
+        backgroundColor: '#fff',
+        elevation: 1,
+        borderRadius: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+    },
+    container: {
+        flexDirection: 'row',
+        borderWidth: 0,
+        borderColor: '#ddd',
+        backgroundColor: '#fff',
+        elevation: 1,
+        borderRadius: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+    },
+    fileLink: {
+        color: 'blue',
+        textDecorationLine: 'underline',
+    },
+    box: {
+        width: 300,
+        height: 300,
+        backgroundColor: 'green',
+        marginBottom: 30,
+    },
+    cell: {
+        flex: 1,
+        flexDirection: 'row',
+        borderColor: '#ddd',
+        borderRightWidth: 1,
+        minHeight: 40,
+        padding: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    cellText: {
+        color: '#000',
+    },
+    columnText: {
+        color: '#0000008a',
+        fontWeight: 'bold',
+        paddingRight: 5,
+    },
+    row: {
+        flexDirection: 'row',
+        borderBottomWidth: 1,
+        borderColor: '#ddd',
+        paddingLeft: 10,
+        paddingRight: 10,
+    },
+    column: {
+        justifyContent: 'center',
+        textAlign: 'center',
+    },
+    cellInput: {
+        width: '100%',
+        textAlign: 'center',
+        fontSize: 16,
+    },
+    maintext: {
+        fontSize: 16,
+        margin: 20,
+        fontWeight: 'bold',
+        color: '#2196f3',
+    },
+    barcodebox: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 150,
+        width: 150,
+        overflow: 'hidden',
+        borderRadius: 30,
+        backgroundColor: 'tomato',
+    },
+    barcodeboxFerma: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        margin: 5,
+        height: 400,
+        overflow: 'hidden',
+        borderRadius: 30,
+        backgroundColor: 'tomato',
+    },
+    containerBarCode: {
+        flex: 1,
+
+        backgroundColor: '#fff',
+    },
+    containerControl: {
+        flexDirection: 'row',
+        backgroundColor: '#fff',
+        alignItems: 'center',
+    },
+    containerControlNou: {
+        flex: 1,
+        color: 'black',
+
+        borderWidth: 5,
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        padding: 30,
+    },
+    alegecontrol: {
+        flex: 0.3,
+        height: 60,
+        borderColor: 'gray',
+        borderWidth: 1,
+        padding: 5,
+
+        margin: 5,
+    },
+    rowFront: {
+        flex: 1,
+        flexDirection: 'row',
+        backgroundColor: '#CCC',
+        borderBottomColor: 'black',
+        borderBottomWidth: 1,
+
+        height: 50,
+    },
+    rowBack: {
+        alignItems: 'flex-start',
+        backgroundColor: 'red',
+        flex: 1,
+        flexDirection: 'row',
+        color: 'white',
+        paddingRight: 20,
+        justifyContent: 'flex-end',
+    },
+    backRightBtn: {
+        alignItems: 'center',
+        bottom: 0,
+        justifyContent: 'center',
+        position: 'absolute',
+        top: 0,
+        width: 75,
+    },
+    backRightBtnLeft: {
+        backgroundColor: 'blue',
+        right: 75,
+    },
+    backRightBtnRight: {
+        backgroundColor: 'red',
+        right: 0,
+    },
+    buttonNavi: {
+        elevation: 5,
+        margin: 2,
+        padding: 8,
+        fontSize: 24,
+        textAlign: 'center',
+        backgroundColor: '#2196f3',
+        borderRadius: 10,
+        color: '#fff',
+    },
+
+    buttonNavi2: {
+        elevation: 5,
+        margin: 2,
+        padding: 8,
+        fontSize: 20,
+        textAlign: 'center',
+        backgroundColor: '#2196f3',
+        borderRadius: 10,
+        color: '#fff',
+    },
+})
+
+export default styles
