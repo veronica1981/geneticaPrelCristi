@@ -115,7 +115,6 @@ export default function ControlNou({
 
     useEffect(() => {
         checkConnection();
-        console.log("Control id", route.params.controlId);
         if (route.params.controlId) {
             setloading(true); // Assume loading starts here
             getControls(route.params.controlId).then((items) => {
