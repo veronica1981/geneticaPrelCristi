@@ -3,7 +3,7 @@ import {useNavigation} from '@react-navigation/native'
 import {Audio} from 'expo-av'
 import {BarCodeScanner} from 'expo-barcode-scanner'
 import PropTypes from 'prop-types'
-import React, {useEffect, useState} from 'react'
+import React, {useContext, useEffect, useState} from 'react'
 import {
     ActivityIndicator,
     Alert,
@@ -29,6 +29,7 @@ import Style from './style'
 import CellDeleteButton from './lib/CellEditButton';
 import CellIndex from './lib/CellIndex';
 import {checkConnection} from './NaviUtil';
+import PrelevContext from './lib/PrelevContext';
 
 const columns = [
     {
@@ -112,6 +113,7 @@ export default function ControlNou({
     const [saved, setSaved] = useState(false)
     const [loading, setloading] = useState(false)
     const navigation = useNavigation()
+    const { selectedPrelevName, selectedPrelevId } = useContext(PrelevContext);
 
     useEffect(() => {
         checkConnection();
@@ -159,7 +161,6 @@ export default function ControlNou({
    async function saveControls() {
         if (checkConnection()) {
             const controlId = route.params.controlId
-            const controlor = route.params.controlor
             var liniiD = linii.map((e) => e[0].value)
             var duplicates = liniiD.filter(function (value, index, self) {
                 return (
@@ -182,12 +183,10 @@ export default function ControlNou({
 
             try {
                 if (!controlId && !saved) {
-                    await saveControlMeta(route.params.ferma, route.params.datac, controlor, linii);
+                    await saveControlMeta(route.params.ferma, route.params.datac, selectedPrelevId, linii);
                     setSaved(true);
-                    console.log("Saving control meta");
                 } else {
                     await deleteControls(linii, controlId);
-                    console.log("delete controls");
                 }
 
                 setHasChanges(false);

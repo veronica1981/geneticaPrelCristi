@@ -1,57 +1,78 @@
-import React, {useEffect, useState} from 'react';
-import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import {Picker} from '@react-native-picker/picker';
-import {useNavigation} from '@react-navigation/native';
+import React, { useContext, useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
+import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {getAsoc, getPrelevatoriAsoc} from './lib/services/Services';
+import { getAsoc, getPrelevatoriAsoc } from './lib/services/Services';
+import { PrelevContext } from './lib/PrelevContext';
 
 const STORprelev_KEY = '@save_prelev';
 
 const Setari = () => {
-    const [asoc, setAsoc] = useState('');
+    const [asoc, setAsoc] = useState(null);
     const [data, setData] = useState([]);
     const [prelev, setPrelev] = useState([]);
-    const [selectedPrelevId, setSelectedPrelevId] = useState('');
+    const [isLoad, setIsLoad] = useState(false);
+    const [error, setError] = useState(null);
+
+    const { selectedPrelev, setSelectedPrelev } = useContext(PrelevContext);
+    const { id: selectedPrelevId, name: selectedPrelevName } = selectedPrelev;
 
     const navigation = useNavigation();
 
     useEffect(() => {
+        setIsLoad(true);
+        setError(null);
         const fetchAsociatii = async () => {
-            const asociatii = await getAsoc();
-            setData(asociatii);
-            if (asociatii.length > 0) {
-                setAsoc(asociatii[0].id);
+            try {
+                const asociatii = await getAsoc();
+                if (asociatii && asociatii.length > 0) {
+                    setData(asociatii);
+                    setAsoc(asociatii[0].id);
+                }
+            } catch (error) {
+                setError('Failed to fetch associations');
+                Alert.alert('Error', 'Failed to load associations');
+            } finally {
+                setIsLoad(false);
             }
         };
         fetchAsociatii();
     }, []);
 
     useEffect(() => {
+        if (!asoc) return;
+        setIsLoad(true);
+        setError(null);
         const fetchPrelevatori = async () => {
-            if (asoc) {
+            try {
                 const prelevatori = await getPrelevatoriAsoc(asoc);
-                setPrelev(prelevatori);
-                if (prelevatori.length > 0) {
-                    setSelectedPrelevId(prelevatori[0].id);
+                if (prelevatori && prelevatori.length > 0) {
+                    setPrelev(prelevatori);
+                    setSelectedPrelev({ id: prelevatori[0].id, name: prelevatori[0].nume });
                 } else {
-                    setSelectedPrelevId('');
+                    setPrelev([]);
+                    setSelectedPrelev({ id: null, name: '' });
                 }
+            } catch (error) {
+                setError('Failed to load collectors');
+                Alert.alert('Error', 'Failed to load collectors');
+            } finally {
+                setIsLoad(false);
             }
         };
         fetchPrelevatori();
     }, [asoc]);
 
     const saveData = async () => {
+        setIsLoad(true);
         try {
-            await AsyncStorage.setItem(STORprelev_KEY, JSON.stringify(selectedPrelevId));
-            const selectedPrelev = prelev.find(p => p.id === selectedPrelevId);
-            console.log(selectedPrelev?.nume, selectedPrelevId);
-            navigation.navigate('Controale', {
-                controlName: selectedPrelev?.nume,
-            });
+            await AsyncStorage.setItem(STORprelev_KEY, JSON.stringify(selectedPrelev));
+            navigation.navigate('Controale');
         } catch (e) {
-            console.error(e);
-            alert('Failed to save the data');
+            Alert.alert('Error', 'Failed to save the data');
+        } finally {
+            setIsLoad(false);
         }
     };
 
@@ -60,25 +81,34 @@ const Setari = () => {
             <View style={styles.header}>
                 <Text style={styles.title}>Genetica Control Lapte</Text>
             </View>
-            <Text style={styles.title2}>
-                Alegeți asociația și căutați numele
-            </Text>
-           <Picker
-                selectedValue={asoc}
-                onValueChange={(itemValue) => setAsoc(itemValue)}
-                style={styles.picker}>
-                {data.map((asoc) => (
-                    <Picker.Item key={asoc.id} label={asoc.nume} value={asoc.id}/>
-                ))}
-            </Picker>
-            <Picker
-                selectedValue={selectedPrelevId}
-                onValueChange={(itemValue) => setSelectedPrelevId(itemValue)}
-                style={styles.picker}>
-                {prelev.map((item) => (
-                    <Picker.Item key={item.id} label={item.nume} value={item.id}/>
-                ))}
-            </Picker>
+            <Text style={styles.title2}>Alegeți asociația și căutați numele prelevator</Text>
+            {data.length > 0 && (
+                <Picker
+                    selectedValue={asoc}
+                    onValueChange={(itemValue) => setAsoc(itemValue)}
+                    style={styles.picker}
+                    enabled={!isLoad}
+                >
+                    {data.map((asoc) => (
+                        <Picker.Item key={asoc.id} label={asoc.nume} value={asoc.id} />
+                    ))}
+                </Picker>
+            )}
+            {prelev.length > 0 && (
+                <Picker
+                    selectedValue={selectedPrelevId}
+                    onValueChange={(itemValue) => {
+                        const selected = prelev.find(p => p.id === itemValue);
+                        setSelectedPrelev({ id: selected.id, name: selected.nume });
+                    }}
+                    style={styles.picker}
+                    enabled={!isLoad}
+                >
+                    {prelev.map((item) => (
+                        <Picker.Item key={item.id} label={item.nume} value={item.id} />
+                    ))}
+                </Picker>
+            )}
             <TouchableOpacity onPress={saveData} style={styles.button}>
                 <Text style={styles.buttonText}>Intra in cont</Text>
             </TouchableOpacity>
@@ -92,7 +122,6 @@ const Setari = () => {
         </View>
     );
 };
-
 
 const styles = StyleSheet.create({
     container: {
@@ -114,37 +143,10 @@ const styles = StyleSheet.create({
         color: 'tomato',
         fontWeight: 'bold',
     },
-    panel: {
-        padding: 40,
-        alignItems: 'center',
-        width: 200,
-    },
-    text: {
-        fontSize: 24,
+    error: {
+        fontSize: 16,
+        color: 'red',
         padding: 10,
-        backgroundColor: '#dcdcdc',
-    },
-    text2: {
-        fontSize: 24,
-        padding: 10,
-        backgroundColor: '#dcdcdc',
-        width: '80%',
-    },
-    bottomView: {
-        width: '100%',
-        backgroundColor: '#dcdcdc',
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'relative', //Here is the trick
-        bottom: 0, //Here is the trick
-        marginTop: '5%',
-    },
-    input: {
-        padding: 15,
-        height: 50,
-        borderBottomWidth: 1,
-        borderBottomColor: '#333',
-        margin: 10,
     },
     button: {
         margin: 10,
@@ -156,7 +158,6 @@ const styles = StyleSheet.create({
         color: 'white',
         textAlign: 'center',
     },
-
     picker: {
         marginVertical: 30,
         width: 300,
@@ -165,6 +166,15 @@ const styles = StyleSheet.create({
         borderColor: '#666',
         fontSize: 30,
     },
-})
+    bottomView: {
+        width: '100%',
+        backgroundColor: '#dcdcdc',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'absolute',
+        bottom: 0,
+        marginTop: '5%',
+    },
+});
 
-export default Setari
+export default Setari;

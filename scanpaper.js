@@ -9,8 +9,9 @@ import Modal from 'react-native-modal'
 import ControlNou from './controlnou'
 import Style from './style'
 import {checkConnection} from './NaviUtil';
+import PrelevContext from './lib/PrelevContext';
 
-export default function ScanPaper({ route }) {
+export default function ScanPaper() {
     const [sound, setSound] = useState(new Audio.Sound())
     const [text, setText] = useState('')
     const [hasPermission, setHasPermission] = useState(null)
@@ -19,6 +20,7 @@ export default function ScanPaper({ route }) {
     const [roferma, setRoferma] = useState()
     const [datac, setDatac] = useState()
     const navigation = useNavigation()
+    const { selectedPrelevId } = useContext(PrelevContext);
     async function playSound() {
         console.log('Loading Sound')
         const { sound } = await Audio.Sound.createAsync(
@@ -167,7 +169,7 @@ export default function ScanPaper({ route }) {
                                     navigation.navigate('ControlNou', {
                                         datac: datac,
                                         ferma: roferma,
-                                        controlor: route.params.controlor,
+                                        controlor: selectedPrelevId,
                                         definitiv: false,
                                     })
                                 }}

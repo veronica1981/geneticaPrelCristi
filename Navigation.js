@@ -9,6 +9,7 @@ import styles from './style';
 import {checkConnection} from './NaviUtil';
 import {TouchableOpacity, Text, Alert, AppState} from 'react-native';
 import appConfig from './app.json';
+import {PrelevProvider} from './lib/PrelevContext';
 
 const versionCode = appConfig.expo.android.versionCode;
 const Stack = createStackNavigator();
@@ -39,7 +40,8 @@ function MyStack() {
                         fontSize: 16,
                     },
                     headerLeft: () => (
-                        <TouchableOpacity onPress={() => navigation.navigate('Controale', {controlor: route.params.controlName})}>
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('Controale')}>
                             <Text style={styles.buttonNavi2}>INAPOI CONTROALE</Text>
                         </TouchableOpacity>
                     ),
@@ -65,8 +67,10 @@ export default function Navigation() {
 
 
     return (
-        <NavigationContainer ref={navigationRef}>
-            <MyStack/>
-        </NavigationContainer>
+        <PrelevProvider>
+            <NavigationContainer ref={navigationRef}>
+                <MyStack/>
+            </NavigationContainer>
+        </PrelevProvider>
     );
 }
