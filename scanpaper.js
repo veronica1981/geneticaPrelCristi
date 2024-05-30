@@ -1,15 +1,15 @@
-import { FontAwesome5 } from '@expo/vector-icons'
-import { useNavigation } from '@react-navigation/native'
-import { Audio } from 'expo-av'
-import { BarCodeScanner } from 'expo-barcode-scanner'
+import {FontAwesome5} from '@expo/vector-icons'
+import {useNavigation} from '@react-navigation/native'
+import {Audio} from 'expo-av'
+import {BarCodeScanner} from 'expo-barcode-scanner'
 import PropTypes from 'prop-types'
-import { React, useEffect, useState } from 'react'
-import { Button, ScrollView, Text, TouchableOpacity, View } from 'react-native'
+import {React, useContext, useEffect, useState} from 'react'
+import {Button, ScrollView, Text, TouchableOpacity, View} from 'react-native'
 import Modal from 'react-native-modal'
 import ControlNou from './controlnou'
 import Style from './style'
 import {checkConnection} from './NaviUtil';
-import PrelevContext from './lib/PrelevContext';
+import {PrelevContext} from './lib/PrelevContext';
 
 export default function ScanPaper() {
     const [sound, setSound] = useState(new Audio.Sound())
@@ -20,10 +20,12 @@ export default function ScanPaper() {
     const [roferma, setRoferma] = useState()
     const [datac, setDatac] = useState()
     const navigation = useNavigation()
-    const { selectedPrelevId } = useContext(PrelevContext);
+    const {selectedPrelev} = useContext(PrelevContext);
+    const {id: selectedPrelevId} = selectedPrelev;
+
     async function playSound() {
         console.log('Loading Sound')
-        const { sound } = await Audio.Sound.createAsync(
+        const {sound} = await Audio.Sound.createAsync(
             require('./assets/beep.mp3')
         )
 
@@ -35,15 +37,15 @@ export default function ScanPaper() {
     useEffect(() => {
         return sound
             ? () => {
-                  console.log('Unloading Sound')
-                  sound.unloadAsync()
-              }
+                console.log('Unloading Sound')
+                sound.unloadAsync()
+            }
             : undefined
     }, [sound])
 
     const askForCameraPermission = () => {
         ;(async () => {
-            const { status } = await BarCodeScanner.requestPermissionsAsync()
+            const {status} = await BarCodeScanner.requestPermissionsAsync()
             setHasPermission(status === 'granted')
         })()
     }
@@ -54,7 +56,7 @@ export default function ScanPaper() {
         askForCameraPermission()
     }, [])
 
-    function handleBarCodeScanned({ data }) {
+    function handleBarCodeScanned({data}) {
         playSound()
         const ferma = data.slice(8)
         const datacontr = data
@@ -87,7 +89,7 @@ export default function ScanPaper() {
     if (hasPermission === false) {
         return (
             <View style={Style.container}>
-                <Text style={{ margin: 10 }}>No access to camera</Text>
+                <Text style={{margin: 10}}>No access to camera</Text>
                 <Button
                     title={'Allow Camera'}
                     onPress={() => askForCameraPermission()}
@@ -97,14 +99,14 @@ export default function ScanPaper() {
     }
 
     return (
-        <ScrollView style={{ flex: 1 }}>
+        <ScrollView style={{flex: 1}}>
             <View style={Style.containerBarCode}>
                 <View
                     style={{
                         flex: 1,
                     }}
                 >
-                    <View style={{ flex: 1 }}>
+                    <View style={{flex: 1}}>
                         <View style={Style.barcodeboxFerma}>
                             {scaneaza && (
                                 <BarCodeScanner
@@ -114,7 +116,7 @@ export default function ScanPaper() {
                                             ? scannedfunc
                                             : handleBarCodeScanned
                                     }
-                                    style={{ width: 500, height: 500 }}
+                                    style={{width: 500, height: 500}}
                                 ></BarCodeScanner>
                             )}
                         </View>

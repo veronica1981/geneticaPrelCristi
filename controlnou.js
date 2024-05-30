@@ -29,7 +29,8 @@ import Style from './style'
 import CellDeleteButton from './lib/CellEditButton';
 import CellIndex from './lib/CellIndex';
 import {checkConnection} from './NaviUtil';
-import PrelevContext from './lib/PrelevContext';
+import {PrelevContext} from './lib/PrelevContext';
+
 
 const columns = [
     {
@@ -113,7 +114,8 @@ export default function ControlNou({
     const [saved, setSaved] = useState(false)
     const [loading, setloading] = useState(false)
     const navigation = useNavigation()
-    const { selectedPrelevName, selectedPrelevId } = useContext(PrelevContext);
+    const { selectedPrelev } = useContext(PrelevContext);
+    const { id: selectedPrelevId } = selectedPrelev;
 
     useEffect(() => {
         checkConnection();

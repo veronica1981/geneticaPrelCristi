@@ -62,7 +62,7 @@ export default function Controale({
     const [show, setShow] = useState(false)
     const [controls, setControls] = useState([])
 
-    const [selecteddataset, setSelecteddataset] = useState('')
+    const [selecteddataset, setSelecteddataset] = useState()
     const [uniquedatasets, setUniquedatasets] = useState([])
     const { selectedPrelev } = useContext(PrelevContext);
     const { id: selectedPrelevId, name: selectedPrelevName } = selectedPrelev;
@@ -81,7 +81,7 @@ export default function Controale({
         const allUniquedatasets = [...new Set(sortedItems.map((item) => item.dataset))];
         setUniquedatasets(allUniquedatasets);
 
-        if (!selecteddataset && sortedItems.length > 0) {
+        if (sortedItems.length > 0) {
             setSelecteddataset(sortedItems[0].dataset);
             console.log(sortedItems[0].dataset, "sortedddd ")
         } else {
@@ -402,9 +402,16 @@ export default function Controale({
                     minHeight: 70,
                     borderRadius: 10,
                 }}
-                onPress={() => navigation.navigate('ScanPaper')}
+                onPress={async () => {
+                    const isConnected = await checkConnection();
+                    if (isConnected) {
+                        navigation.navigate('ScanPaper');
+                    } else {
+                        Alert.alert('No Internet', 'Please check your internet connection and try again.');
+                    }
+                }}
             >
-                <Text style={{color: 'white', fontSize: 24, textAlign: 'center'}}>
+                <Text style={{ color: 'white', fontSize: 24, textAlign: 'center' }}>
                     ADAUGA CONTROL
                 </Text>
             </TouchableOpacity>
