@@ -1,36 +1,144 @@
-import {FontAwesome5} from '@expo/vector-icons'
-import {useNavigation} from '@react-navigation/native'
-import {Audio} from 'expo-av'
-import {BarCodeScanner} from 'expo-barcode-scanner'
-import PropTypes from 'prop-types'
-import React, {useContext, useEffect, useState} from 'react'
+import {FontAwesome5} from '@expo/vector-icons';
+import {useNavigation} from '@react-navigation/native';
+import {Audio} from 'expo-av';
+import {BarCodeScanner} from 'expo-barcode-scanner';
+import PropTypes from 'prop-types';
+import React, {useContext, useEffect, useState} from 'react';
+import * as FileSystem from 'expo-file-system';
+import {StorageAccessFramework} from 'expo-file-system';
 import {
     ActivityIndicator,
     Alert,
     Button,
-    KeyboardAvoidingView,
+    KeyboardAvoidingView, Linking, PermissionsAndroid,
     Platform,
     ScrollView,
     Text,
     TouchableOpacity,
     View,
-} from 'react-native'
-import Modal from 'react-native-modal'
-import {TextInput} from 'react-native-paper'
+} from 'react-native';
+import Modal from 'react-native-modal';
+import {TextInput} from 'react-native-paper';
 
-import Cell from './lib/Cell'
-import Column from './lib/Column'
+import Cell from './lib/Cell';
+import Column from './lib/Column';
 import {
     deleteControls,
     getControls,
     saveControlMeta,
-} from './lib/services/Services'
-import Style from './style'
+} from './lib/services/Services';
+import Style from './style';
 import CellDeleteButton from './lib/CellEditButton';
 import CellIndex from './lib/CellIndex';
 import {checkConnection} from './NaviUtil';
 import {PrelevContext} from './lib/PrelevContext';
 
+async function requestDirectoryPermission() {
+    try {
+        const permissions = await StorageAccessFramework.requestDirectoryPermissionsAsync();
+        if (permissions.granted) {
+            return permissions.directoryUri;
+        } else {
+            Alert.alert(
+                "Permission Required",
+                "Storage permission is required to save files. Please enable it in the app settings.",
+                [
+                    {text: "Cancel", style: "cancel"},
+                    {text: "Open Settings", onPress: () => Linking.openSettings()}
+                ]
+            );
+            return null;
+        }
+    } catch (err) {
+        console.warn(err);
+        return null;
+    }
+}
+
+async function saveCSV(linii, ferma, datac) {
+    const directoryUri = await requestDirectoryPermission();
+    if (!directoryUri) {
+        Alert.alert('Permission denied', 'Cannot save file without storage permission');
+        return;
+    }
+
+    try {
+        // Create CSV data
+
+        const csvData = linii.map(row => {
+            return [row[0].value, datac.split("-").reverse().join("/"), row[1].value].join(",");
+        }).join("\n");
+
+        // Define the file name
+        const fileName = `${ferma}_${datac}_control.csv`; // Unique file name
+
+        // Create the file in the selected directory
+        const fileUri = await StorageAccessFramework.createFileAsync(directoryUri, fileName, 'application/csv');
+
+        // Write the CSV data to the file
+        await StorageAccessFramework.writeAsStringAsync(fileUri, csvData);
+
+        const formattedPath = decodeURIComponent(fileUri.split('document/primary%3A')[1]).replace('%2F', '/');
+
+        Alert.alert('Fisierul CSV a fost salvat', `S-a salvat in directorul: ${formattedPath}`);
+
+        // Log the file path to verify
+        console.log('File saved at:', fileUri);
+    } catch (err) {
+        Alert.alert('Error', `Unable to save file: ${err.message}`);
+    }
+}
+
+
+async function saveControls() {
+    if (await checkConnection()) {
+        const controlId = route.params.controlId;
+        var liniiD = linii.map((e) => e[0].value);
+        var duplicates = liniiD.filter(function (value, index, self) {
+            return (
+                self.indexOf(value) !== self.lastIndexOf(value) &&
+                self.indexOf(value) === index
+            );
+        });
+
+        if (duplicates.length > 0) {
+            Alert.alert('Crotalii duplicate   ' + duplicates, '', [
+                {
+                    text: 'OK',
+                    style: 'cancel',
+                    onPress: () => {
+                    },
+                },
+            ]);
+            return;
+        }
+
+        try {
+            if (!controlId && !saved) {
+                await saveControlMeta(route.params.ferma, route.params.datac, selectedPrelevId, linii);
+                setSaved(true);
+            } else {
+                await deleteControls(linii, controlId);
+            }
+
+            setHasChanges(false);
+            console.log("Before success alert");
+            Alert.alert('Salvarea s-a efectuat.', '', [
+                {
+                    text: 'OK',
+                    onPress: () => {
+                    },
+                    style: 'cancel',
+                },
+            ]);
+        } catch (error) {
+            Alert.alert('Eroare la salvare: ' + error.message);
+        }
+    } else {
+        await saveCSV(linii, route.params.ferma, route.params.datac);
+        Alert.alert('Nu există conexiune la internet. Datele au fost salvate ca CSV.');
+    }
+}
 
 const columns = [
     {
@@ -68,11 +176,11 @@ const columns = [
         width: 27.5,
         sortable: true,
     },
-]
+];
 const values = [
     [{value: '', editable: true}, {value: '', editable: true}, 890756453],
     [{value: '', editable: true}, {value: '', editable: true}, 890756454],
-]
+];
 
 export default function ControlNou({
                                        customStyles,
@@ -86,39 +194,49 @@ export default function ControlNou({
                                    }) {
     const sortIndex = columns.findIndex(
         (c) => c.hasOwnProperty('defaultSort') === true
-    )
+    );
 
     const [sort, setSort] = useState(
         sortIndex !== undefined ? columns[sortIndex].defaultSort : null
-    )
+    );
 
     const [sortColumnIndex, setSortColumnIndex] = useState(
         sortIndex !== undefined ? sortIndex : null
-    )
+    );
 
-    const [scanned, setScanned] = useState(false)
-    const [text, setText] = useState('')
-    const [sound, setSound] = useState(new Audio.Sound())
-    const [rows, setRows] = useState(values.length)
-    const [linii, setLinii] = useState([])
-    let columnWidths = columns.map((c) => c.width)
-    const [widths, setnWidths] = useState(_calculateCellWidths(columnWidths))
-    const [hasPermission, setHasPermission] = useState(null)
-    const [asc, setAsc] = useState(false)
-    const [displayId, setDisplayId] = useState(linii.length)
-    const [liniiNoi, setLiniiNoi] = useState('1')
-    const [scaneaza, setScaneaza] = useState(false)
-    const [collapsed, setCollapsed] = useState(true)
-    const [codManual, setCodManual] = useState('')
-    const [hasChanges, setHasChanges] = useState(false)
-    const [saved, setSaved] = useState(false)
-    const [loading, setloading] = useState(false)
-    const navigation = useNavigation()
-    const { selectedPrelev } = useContext(PrelevContext);
-    const { id: selectedPrelevId } = selectedPrelev;
+    const [scanned, setScanned] = useState(false);
+    const [text, setText] = useState('');
+    const [sound, setSound] = useState(new Audio.Sound());
+    const [rows, setRows] = useState(values.length);
+    const [linii, setLinii] = useState([]);
+    let columnWidths = columns.map((c) => c.width);
+    const [widths, setnWidths] = useState(_calculateCellWidths(columnWidths));
+    const [hasPermission, setHasPermission] = useState(null);
+    const [hasPermissionWrite, setHasPermissionWrite] = useState(null);
+    const [asc, setAsc] = useState(false);
+    const [displayId, setDisplayId] = useState(linii.length);
+    const [liniiNoi, setLiniiNoi] = useState('1');
+    const [scaneaza, setScaneaza] = useState(false);
+    const [collapsed, setCollapsed] = useState(true);
+    const [codManual, setCodManual] = useState('');
+    const [hasChanges, setHasChanges] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [loading, setloading] = useState(false);
+    const [isConnected, setIsConnected] = useState(false);
+    const navigation = useNavigation();
+    const {selectedPrelev} = useContext(PrelevContext);
+    const {id: selectedPrelevId} = selectedPrelev;
 
     useEffect(() => {
-        checkConnection();
+        const checkInternetConnection = async () => {
+            const connectionStatus = await checkConnection();
+            setIsConnected(connectionStatus);
+        };
+
+        checkInternetConnection();
+    }, []);
+
+    useEffect(() => {
         if (route.params.controlId) {
             setloading(true); // Assume loading starts here
             getControls(route.params.controlId).then((items) => {
@@ -138,38 +256,36 @@ export default function ControlNou({
         }
     }, [route.params.controlId]); // This effect depends on route.params.controlId
 
-
-
     async function playSound() {
         const {sound} = await Audio.Sound.createAsync(
             require('./assets/beep.mp3')
-        )
+        );
 
-        setSound(sound)
+        setSound(sound);
 
-        await sound.playAsync()
+        await sound.playAsync();
     }
 
     const toggleExpanded = () => {
         //Toggling the state of single Collapsible
-        setCollapsed(!collapsed)
+        setCollapsed(!collapsed);
         if (collapsed == true) {
-            setScanned(true)
+            setScanned(true);
         } else {
-            setScanned(false)
+            setScanned(false);
         }
-    }
+    };
 
-   async function saveControls() {
-        if (checkConnection()) {
-            const controlId = route.params.controlId
-            var liniiD = linii.map((e) => e[0].value)
+    async function saveControls() {
+        if (await checkConnection()) {
+            const controlId = route.params.controlId;
+            var liniiD = linii.map((e) => e[0].value);
             var duplicates = liniiD.filter(function (value, index, self) {
                 return (
                     self.indexOf(value) !== self.lastIndexOf(value) &&
                     self.indexOf(value) === index
-                )
-            })
+                );
+            });
 
             if (duplicates.length > 0) {
                 Alert.alert('Crotalii duplicate   ' + duplicates, '', [
@@ -179,8 +295,8 @@ export default function ControlNou({
                         onPress: () => {
                         },
                     },
-                ])
-                return
+                ]);
+                return;
             }
 
             try {
@@ -196,32 +312,36 @@ export default function ControlNou({
                 Alert.alert('Salvarea s-a efectuat.', '', [
                     {
                         text: 'OK',
-                        onPress: () => {},
+                        onPress: () => {
+                        },
                         style: 'cancel',
                     },
                 ]);
             } catch (error) {
-                Alert.alert('Eroare la salvare: ' + error.message);
+                Alert.alert('Eroare la salvare, probabil nu aveti conexiune internet. Salvati controlul prin butonul CSV ca sa nu pierdeti datele.');
             }
+        } else {
+            await saveCSV(linii, route.params.ferma, route.params.datac);
+            Alert.alert('Nu există conexiune la internet. Datele au fost salvate ca CSV.');
         }
     }
 
     React.useEffect(() => {
         return sound
             ? () => {
-                sound.unloadAsync()
+                sound.unloadAsync();
             }
-            : undefined
-    }, [sound])
+            : undefined;
+    }, [sound]);
 
     React.useEffect(
         () =>
             navigation.addListener('beforeRemove', (e) => {
-                setScaneaza(false)
-                if (!hasChanges) return
-                const action = e.data.action
+                setScaneaza(false);
+                if (!hasChanges) return;
+                const action = e.data.action;
 
-                e.preventDefault()
+                e.preventDefault();
 
                 Alert.alert('Vreti sa parasiti pagina fara sa salvati?', '', [
                     {
@@ -235,28 +355,26 @@ export default function ControlNou({
                         style: 'destructive',
                         onPress: () => navigation.dispatch(action),
                     },
-                ])
+                ]);
             }),
         [navigation, hasChanges]
-    )
+    );
 
-    const askForCameraPermission = () => {
-        ;(async () => {
-            const {status} = await BarCodeScanner.requestPermissionsAsync()
-            setHasPermission(status === 'granted')
-        })()
-    }
 
-// Request Camera Permission
-    React.useEffect(() => {
-        askForCameraPermission()
-    }, [])
+    useEffect(() => {
+        const requestPermissions = async () => {
+            const cameraPermission = await BarCodeScanner.requestPermissionsAsync();
+            setHasPermission(cameraPermission.status === 'granted');
+        };
+
+        requestPermissions();
+    }, []);
 
     function createColumns(columns) {
         return columns.map((c, i) => {
-            let borders = {}
+            let borders = {};
             if (headerBorders) {
-                borders = _createBorderStyles(i, columns.length)
+                borders = _createBorderStyles(i, columns.length);
             }
             return (
                 <Column
@@ -271,71 +389,71 @@ export default function ControlNou({
                     width={widths[i]}
                     sortColumn={sortColumn}
                 />
-            )
-        })
+            );
+        });
     }
 
     function sortColumn(colIndex) {
-        let sortedAsceding
+        let sortedAsceding;
 
         if (asc) {
             if (colIndex == 4) {
                 sortedAsceding = linii.sort((a, b) => {
-                    return Number(b[2]) - Number(a[2])
-                })
+                    return Number(b[2]) - Number(a[2]);
+                });
             } else {
                 sortedAsceding = linii.sort((a, b) => {
                     return (
                         Number(b[colIndex - 2].value) -
                         Number(a[colIndex - 2].value)
-                    )
-                })
+                    );
+                });
             }
         } else {
             if (colIndex == 4) {
                 sortedAsceding = linii.sort((a, b) => {
-                    return Number(a[2]) - Number(b[2])
-                })
+                    return Number(a[2]) - Number(b[2]);
+                });
             }
             sortedAsceding = linii.sort((a, b) => {
                 return (
                     Number(a[colIndex - 2].value) -
                     Number(b[colIndex - 2].value)
-                )
-            })
+                );
+            });
         }
-        setAsc(!asc)
+        setAsc(!asc);
 
-        return setLinii([...sortedAsceding])
+        return setLinii([...sortedAsceding]);
     }
 
     function createRows(rows) {
-        let count = 0
+        let count = 0;
         let arr = rows.map((row, i) => {
-            const isLastRow = rows.length - 1 === i
-            const rowStyle = [Style.row, customStyles.row, {}]
+            const isLastRow = rows.length - 1 === i;
+            const rowStyle = [Style.row, customStyles.row, {}];
 
             return (
                 <View key={row[2]} style={rowStyle}>
                     {createRow(row, i)}
                 </View>
-            )
-        })
-        return arr.reverse()
+            );
+        });
+        return arr.reverse();
 
         //sortColumn(2)
     }
 
     function createRow(row, rowIndex) {
-        let addColIndex = 0
+        let addColIndex = 0;
         var cells = row.map((cell, colIndex) => {
-            colIndex = colIndex + addColIndex
+            colIndex = colIndex + addColIndex;
             if (cell.hasOwnProperty('span')) {
-                addColIndex += cell.span - 1
+                addColIndex += cell.span - 1;
             }
-            let borderStyle = {}
+            let borderStyle = {};
             if (borders) {
-                borderStyle = _createBorderStyles(colIndex, row.length)
+                borderStyle = _createBorderStyles(colIndex, row.length);
             }
             return createCell(
                 cell,
@@ -343,13 +461,13 @@ export default function ControlNou({
                 rowIndex,
                 borderStyle,
                 onCellChange
-            )
-        })
+            );
+        });
         return [
-            createCellDelete('', 0, row, rowIndex, 0.5),
+            route.params.definitiv == false ? createCellDelete('', 0, row, rowIndex, 0.5) : null,
             createCellIndex('', 1, rowIndex, 0.5),
             cells,
-        ]
+        ];
     }
 
     function createCellDelete(cell, colIndex, row, rowIndex, borderStyle) {
@@ -367,11 +485,11 @@ export default function ControlNou({
                 rowIndex={rowIndex}
                 deleteRow={deleteRow}
             />
-        )
+        );
     }
 
     function deleteRow(row) {
-        return setLinii(linii.filter((linie) => linie !== row))
+        return setLinii(linii.filter((linie) => linie !== row));
     }
 
     function createCellIndex(cell, colIndex, rowIndex, borderStyle) {
@@ -388,19 +506,19 @@ export default function ControlNou({
                 row={rowIndex}
                 displayId={displayId}
             />
-        )
+        );
     }
 
     function createCell(cell, colIndex, rowIndex, borderStyle) {
-        let columnInput = columns[colIndex].input
-        columnInput += `-${rowIndex}-${colIndex}`
+        let columnInput = columns[colIndex].input;
+        columnInput += `-${rowIndex}-${colIndex}`;
         if (typeof cell === 'object') {
-            let width = widths[colIndex]
+            let width = widths[colIndex];
             if (cell.hasOwnProperty('span')) {
-                const span = cell.span
+                const span = cell.span;
                 if (span + colIndex <= columns.length) {
                     for (let i = 1; i < span; i++) {
-                        width += widths[colIndex + i]
+                        width += widths[colIndex + i];
                     }
                 }
             }
@@ -418,7 +536,7 @@ export default function ControlNou({
                     row={rowIndex}
                     onCellChange={onCellChange}
                 />
-            )
+            );
         }
 
         return (
@@ -434,28 +552,28 @@ export default function ControlNou({
                 column={colIndex}
                 row={rowIndex}
             />
-        )
+        );
     }
 
     function _createBorderStyles(i, length) {
         return {
             borderRightWidth: length - 1 > i ? 0.5 : 0,
-        }
+        };
     }
 
     function _calculateCellWidths(widths) {
-        const widthFlexs = []
+        const widthFlexs = [];
         for (let i = 0; i < widths.length; i++) {
-            widthFlexs.push(widths.length * (widths[i] * 0.01))
+            widthFlexs.push(widths.length * (widths[i] * 0.01));
         }
-        return widthFlexs
+        return widthFlexs;
     }
 
     function onCellChange(value, column, row, unique_id) {
-        let items = [...linii]
-        items[row][column].value = value
+        let items = [...linii];
+        items[row][column].value = value;
 
-        setLinii(items)
+        setLinii(items);
     }
 
     const showConfirmDialog = () => {
@@ -467,7 +585,7 @@ export default function ControlNou({
                 {
                     text: 'Yes',
                     onPress: () => {
-                        setShowBox(false)
+                        setShowBox(false);
                     },
                 },
                 // The "No" button
@@ -476,57 +594,61 @@ export default function ControlNou({
                     text: 'No',
                 },
             ]
-        )
-    }
+        );
+    };
 
     function handleBarCodeScanned({data}) {
-
-        playSound()
+        playSound();
         if (linii.some((linie) => linie[2].toString() === data)) {
-            setText(undefined)
+            setText(undefined);
         } else {
-            setText(data)
+            setText(data);
         }
-        setScanned(true)
-        setScaneaza(false)
-
+        setScanned(true);
+        setScaneaza(false);
     }
 
     function scannedfunc() {
-        return undefined
+        return undefined;
     }
 
     function existent(text) {
-        return text !== undefined
+        return text !== undefined;
     }
 
-    if (hasPermission === null) {
+    if (hasPermission === null || hasPermissionWrite) {
         return (
             <View style={Style.container}>
                 <Text>Requesting for camera permission</Text>
             </View>
-        )
+        );
     }
-    if (hasPermission === false) {
+    if (hasPermission === false || hasPermissionWrite) {
         return (
             <View style={Style.container}>
-                <Text style={{margin: 10}}>No access to camera</Text>
+                <Text style={{margin: 10}}>No access to camera or files</Text>
                 <Button
-                    title={'Allow Camera'}
-                    onPress={() => askForCameraPermission()}
+                    title={'Acorda Permisiuni'}
+                    onPress={() => {
+                        askForCameraPermission();
+                        askForFilePermission()
+                    }}
                 />
             </View>
-        )
+        );
     }
     return (
         <ScrollView style={{flex: 1}}>
             {route.params.definitiv == false ? (
                 <TouchableOpacity
                     style={{
-                        height: 40,
+                        height: 60,
                         justifyContent: 'center',
-                        margin: 10,
+                        margin: 5,
                         alignItems: 'center',
+                        borderRadius: 10, // Rounded corners
+                        shadowRadius: 10,
+                        elevation: 2, // Shadow for Android
                     }}
                     onPress={saveControls}
                 >
@@ -536,7 +658,7 @@ export default function ControlNou({
                             fontSize: 24,
                         }}
                     >
-                        SALVEAZA
+                        SALVEAZĂ
                     </Text>
                 </TouchableOpacity>
             ) : (
@@ -562,7 +684,30 @@ export default function ControlNou({
                     </Text>
                 </View>
             )}
-
+            <TouchableOpacity
+                style={{
+                    height: 30,
+                    justifyContent: 'center',
+                    width: 100,
+                    margin: 10,
+                    alignItems: 'center',
+                    backgroundColor: '#28a745',
+                    borderRadius: 15,
+                    flexDirection: 'row',
+                    paddingHorizontal: 10,
+                }}
+                onPress={() => saveCSV(linii, route.params.ferma, route.params.datac)}
+            >
+                <FontAwesome5 name="file-excel" size={24} color="white" style={{marginRight: 10}}/>
+                <Text
+                    style={{
+                        color: 'white',
+                        fontSize: 24,
+                    }}
+                >
+                    CSV
+                </Text>
+            </TouchableOpacity>
             <View style={Style.containerBarCode}>
                 <View
                     style={{
@@ -581,7 +726,7 @@ export default function ControlNou({
                     >
                         {route.params.definitiv == false ? (
                             <View style={Style.barcodebox}>
-                                {scaneaza && checkConnection() && (
+                                {scaneaza && isConnected && (
                                     <BarCodeScanner
                                         barCodeTypes={["code128"]}
                                         onBarCodeScanned={scanned ? scannedfunc : handleBarCodeScanned}
@@ -596,33 +741,35 @@ export default function ControlNou({
                         ) : (
                             <View></View>
                         )}
-                        <TouchableOpacity
-                            style={{
-                                backgroundColor: 'tomato',
-                                borderRadius: 30,
-                                justifyContent: 'center',
-                                flex: 0.9,
-                            }}
-                            onPress={() => {
-                                setScanned(false)
-                                setScaneaza(true)
-                            }}
-                        >
-                            <Text
+                        {isConnected && (
+                            <TouchableOpacity
                                 style={{
-                                    color: 'white',
-                                    fontSize: 28,
+                                    backgroundColor: 'tomato',
+                                    borderRadius: 30,
+                                    justifyContent: 'center',
+                                    flex: 0.9,
+                                }}
+                                onPress={() => {
+                                    setScanned(false);
+                                    setScaneaza(true);
                                 }}
                             >
-                                {' '}
-                                Scaneaza{' '}
-                                <FontAwesome5
-                                    size={30}
-                                    color="white"
-                                    name="barcode"
-                                />
-                            </Text>
-                        </TouchableOpacity>
+                                <Text
+                                    style={{
+                                        color: 'white',
+                                        fontSize: 28,
+                                    }}
+                                >
+                                    {' '}
+                                    Scanează{' '}
+                                    <FontAwesome5
+                                        size={30}
+                                        color="white"
+                                        name="barcode"
+                                    />
+                                </Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
 
                     {existent(text) ? (
@@ -656,8 +803,8 @@ export default function ControlNou({
                                             },
                                             parseInt(text),
                                         ],
-                                    ])
-                                    setText('')
+                                    ]);
+                                    setText('');
                                 }}
                             >
                                 <Text
@@ -677,7 +824,7 @@ export default function ControlNou({
                                     backgroundColor: 'red',
                                 }}
                                 onPress={() => {
-                                    setText('')
+                                    setText('');
                                 }}
                             >
                                 <Text
@@ -706,7 +853,7 @@ export default function ControlNou({
                                     backgroundColor: 'red',
                                 }}
                                 onPress={() => {
-                                    setText('')
+                                    setText('');
                                 }}
                             >
                                 <Text
@@ -723,94 +870,104 @@ export default function ControlNou({
                     )}
                     {/* </Collapsible> */}
                 </View>
-                {checkConnection() && <View
-                    style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                    }}
-                >
-                    <TouchableOpacity
+                {isConnected && (
+                    <View
                         style={{
-                            backgroundColor: '#2196f3',
-                            borderRadius: 10,
-                            padding: 1,
-                        }}
-                        onPress={() => {
-                            setHasChanges(true)
-                            var arr = linii.sort((a, b) => {
-                                return Number(a[2]) - Number(b[2])
-                            })
-                            if (codManual) {
-                                let cod = [
-                                    {value: '', editable: true},
-                                    {value: '', editable: true},
-                                    parseInt(codManual),
-                                ]
-
-                                setLinii([...arr, cod])
-
-                                setCodManual('')
-                            } else {
-                                let newLines = []
-                                if (linii.length > 0)
-                                    for (var i = 0; i < liniiNoi; i++) {
-                                        newLines.push([
-                                            {value: '', editable: true},
-                                            {value: '', editable: true},
-
-                                            parseInt(
-                                                linii[linii.length - 1][2] +
-                                                i +
-                                                1
-                                            ),
-                                        ])
-                                    }
-
-                                setLinii([...arr, ...newLines])
-
-                                setLiniiNoi('1')
-                            }
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
                         }}
                     >
-                        <Text
+                        <TouchableOpacity
                             style={{
-                                fontSize: 28,
-                                color: 'white',
-                                textAlign: 'center',
-                                textAlignVertical: 'center',
+                                backgroundColor: '#2196f3',
+                                borderRadius: 10,
+                                padding: 1,
+                            }}
+                            onPress={() => {
+                                setHasChanges(true);
+                                var arr = linii.sort((a, b) => {
+                                    return Number(a[2]) - Number(b[2]);
+                                });
+                                if (codManual) {
+                                    let cod = [
+                                        { value: '', editable: true },
+                                        { value: '', editable: true },
+                                        parseInt(codManual),
+                                    ];
+
+                                    let newLines = [];
+                                    if (parseInt(liniiNoi) > 1) {
+                                        for (var i = 0; i < parseInt(liniiNoi); i++) {
+                                            newLines.push([
+                                                { value: '', editable: true },
+                                                { value: '', editable: true },
+                                                parseInt(codManual) + i,
+                                            ]);
+                                        }
+                                    } else {
+                                        newLines.push(cod);
+                                    }
+
+                                    setLinii([...arr, ...newLines]);
+                                    setCodManual('');
+                                    setLiniiNoi('1');
+                                } else {
+                                    let newLines = [];
+                                    if (linii.length > 0) {
+                                        for (var i = 0; i < parseInt(liniiNoi); i++) {
+                                            newLines.push([
+                                                { value: '', editable: true },
+                                                { value: '', editable: true },
+                                                parseInt(linii[linii.length - 1][2] + i + 1),
+                                            ]);
+                                        }
+                                    }
+
+                                    setLinii([...arr, ...newLines]);
+                                    setLiniiNoi('1');
+                                }
                             }}
                         >
-                            Adauga
-                        </Text>
-                    </TouchableOpacity>
+                            <Text
+                                style={{
+                                    fontSize: 28,
+                                    color: 'white',
+                                    textAlign: 'center',
+                                    textAlignVertical: 'center',
+                                }}
+                            >
+                                Adaugă
+                            </Text>
+                        </TouchableOpacity>
 
-                    <TextInput
-                        minWidth={100}
-                        label="Urmatoarele"
-                        fontWeight="bold"
-                        keyboardType="decimal-pad"
-                        fontSize={30}
-                        textAlign="center"
-                        value={liniiNoi}
-                        onChangeText={(text) => {
-                            setLiniiNoi(text)
-                        }}
-                        type="outlined"
-                    />
-                    <TextInput
-                        minWidth={150}
-                        label="Cod bare"
-                        fontWeight="bold"
-                        keyboardType="decimal-pad"
-                        fontSize={30}
-                        textAlign="center"
-                        value={codManual}
-                        onChangeText={(text) => {
-                            setCodManual(text)
-                        }}
-                        type="outlined"
-                    />
-                </View>}
+                        <TextInput
+                            minWidth={100}
+                            label="Urmatoarele"
+                            fontWeight="bold"
+                            keyboardType="decimal-pad"
+                            fontSize={30}
+                            textAlign="center"
+                            value={liniiNoi}
+                            onChangeText={(text) => {
+                                setLiniiNoi(text);
+                            }}
+                            type="outlined"
+                        />
+                        <TextInput
+                            minWidth={150}
+                            label="Cod bare"
+                            fontWeight="bold"
+                            keyboardType="decimal-pad"
+                            fontSize={30}
+                            textAlign="center"
+                            value={codManual}
+                            onChangeText={(text) => {
+                                setCodManual(text);
+                            }}
+                            type="outlined"
+                        />
+                    </View>
+                )}
                 <View>
                     <View
                         style={[
@@ -843,7 +1000,7 @@ export default function ControlNou({
                 </View>
             </View>
         </ScrollView>
-    )
+    );
 }
 
 ControlNou.defaultProps = {
@@ -854,7 +1011,7 @@ ControlNou.defaultProps = {
     style: {},
     customStyles: {},
     cellHeight: 40,
-}
+};
 
 ControlNou.propTypes = {
     columns: PropTypes.array,
@@ -866,4 +1023,4 @@ ControlNou.propTypes = {
     customStyles: PropTypes.object,
     borders: PropTypes.bool,
     headerBorders: PropTypes.bool,
-}
+};

@@ -1,22 +1,16 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import {useFocusEffect, useNavigation} from '@react-navigation/native'
-import PropTypes from 'prop-types'
-import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react'
-import {Alert, Button, FlatList, ScrollView, Text, TouchableOpacity, View} from 'react-native'
-import CellIndex from './lib/CellIndex'
-import CellControale from './lib/CellControale'
-import CellEditButton from './lib/CellEditButton'
-import Column from './lib/ColumnControale'
-import {
-    getControls,
-    getControlsMeta,
-    putDefinitivControlMeta,
-} from './lib/services/Services'
-import Style from './style'
-import {checkConnection} from './NaviUtil';
-import {PrelevContext} from './lib/PrelevContext';
-
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import PropTypes from 'prop-types';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Button, FlatList, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import CellIndex from './lib/CellIndex';
+import CellControale from './lib/CellControale';
+import CellEditButton from './lib/CellEditButton';
+import Column from './lib/ColumnControale';
+import { getControls, getControlsMeta, putDefinitivControlMeta } from './lib/services/Services';
+import Style from './style';
+import { checkConnection } from './NaviUtil';
+import { PrelevContext } from './lib/PrelevContext';
 
 export default function Controale({
                                       customStyles,
@@ -29,46 +23,27 @@ export default function Controale({
                                       route,
                                   }) {
     const columns = [
-        {
-            value: 'Edit',
-            input: 'c0',
-            width: 7,
-        },
-        {
-            value: '#',
-            input: 'c1',
-            width: 7,
-        },
-        {
-            value: 'Ferma',
-            input: 'c2',
-            width: 35,
-        },
-        {
-            value: 'Data Set',
-            input: 'c3',
-            width: 20,
-        },
-        {
-            value: 'Definitiv',
-            input: 'c5',
-            width: 7,
-        },
-    ]
+        { value: 'Edit', input: 'c0', width: 7 },
+        { value: '#', input: 'c1', width: 7 },
+        { value: 'Ferma', input: 'c2', width: 35 },
+        { value: 'Data Set', input: 'c3', width: 20 },
+        { value: 'Definitiv', input: 'c5', width: 7 },
+    ];
 
-    let columnWidths = columns.map((c) => c.width)
-    const [widths] = useState(_calculateCellWidths(columnWidths))
-    const [datac, setDatac] = useState(new Date())
-    const [show, setShow] = useState(false)
-    const [controls, setControls] = useState([])
+    const columnWidths = columns.map((c) => c.width);
+    const [widths] = useState(_calculateCellWidths(columnWidths));
+    const [datac, setDatac] = useState(new Date());
+    const [show, setShow] = useState(false);
+    const [controls, setControls] = useState([]);
 
-    const [selecteddataset, setSelecteddataset] = useState()
-    const [uniquedatasets, setUniquedatasets] = useState([])
+    const [selecteddataset, setSelecteddataset] = useState();
+    const [uniquedatasets, setUniquedatasets] = useState([]);
     const { selectedPrelev } = useContext(PrelevContext);
     const { id: selectedPrelevId, name: selectedPrelevName } = selectedPrelev;
 
     const navigation = useNavigation();
     const prevSelecteddatasetRef = useRef();
+
     const loadData = useCallback(async () => {
         if (!selectedPrelevId) {
             navigation.navigate('Setari');
@@ -76,31 +51,26 @@ export default function Controale({
         }
 
         const items = await getControlsMeta(selectedPrelevId);
-
         const sortedItems = items.sort((a, b) => (new Date(b.dataset) > new Date(a.dataset) ? 1 : -1));
         const allUniquedatasets = [...new Set(sortedItems.map((item) => item.dataset))];
         setUniquedatasets(allUniquedatasets);
 
         if (sortedItems.length > 0) {
             setSelecteddataset(sortedItems[0].dataset);
-            console.log(sortedItems[0].dataset, "sortedddd ")
         } else {
             setSelecteddataset('');
-            console.log(sortedItems, "elseeeeee ")
         }
-    }, [selectedPrelevId]);
+    }, [selectedPrelevId, navigation]);
 
-    // Load data when the component mounts
     useFocusEffect(
         useCallback(() => {
             if (selectedPrelevId) {
                 loadData();
             }
-        }, [loadData])
+        }, [loadData, selectedPrelevId])
     );
-    // Filter controls based on selecteddataset
+
     useEffect(() => {
-        checkConnection();
         const prevSelecteddataset = prevSelecteddatasetRef.current;
         if (prevSelecteddataset !== selecteddataset) {
             const filterControls = async () => {
@@ -113,7 +83,6 @@ export default function Controale({
                 }
             };
             filterControls();
-
         }
 
         prevSelecteddatasetRef.current = selecteddataset;
@@ -185,13 +154,13 @@ export default function Controale({
 
     function groupBydataset(data) {
         return data.reduce((groups, item) => {
-            const key = item['dataset']
+            const key = item['dataset'];
             if (!groups[key]) {
-                groups[key] = []
+                groups[key] = [];
             }
-            groups[key].push(item)
-            return groups
-        }, {})
+            groups[key].push(item);
+            return groups;
+        }, {});
     }
 
     function createRows() {
@@ -222,24 +191,17 @@ export default function Controale({
         return `${day}_${month}_${year}`;
     }
 
-
-
     function createRow(row, rowIndex) {
-        let addColIndex = 0
-        var entries = [
-            row['id'],
-            row['ferma'],
-            row['dataset'],
-            row['definitiv'],
-        ]
-        var cells = entries.map((cell, colIndex) => {
-            colIndex = colIndex + addColIndex
+        let addColIndex = 0;
+        const entries = [row['id'], row['ferma'], row['dataset'], row['definitiv']];
+        const cells = entries.map((cell, colIndex) => {
+            colIndex = colIndex + addColIndex;
             if (cell.hasOwnProperty('span')) {
-                addColIndex += cell.span - 1
+                addColIndex += cell.span - 1;
             }
-            let borderStyle = {}
+            let borderStyle = {};
             if (borders) {
-                borderStyle = _createBorderStyles(colIndex, row.length)
+                borderStyle = _createBorderStyles(colIndex, row.length);
             }
             return createCell(
                 cell,
@@ -247,25 +209,15 @@ export default function Controale({
                 rowIndex,
                 borderStyle,
                 row['definitiv'],
-                `cell-${rowIndex}-${colIndex}`, // unique key prop
-            )
-        })
+                `cell-${rowIndex}-${colIndex}` // unique key prop
+            );
+        });
 
         return [
-
-
             cells[0],
-            createCellIndex(
-                '',
-                1,
-                controls.indexOf(row),
-                0.5,
-                `index-${rowIndex}`, // unique key prop
-            ),
+            createCellIndex('', 1, controls.indexOf(row), 0.5, `index-${rowIndex}`), // unique key prop
             ...cells.slice(1), // spread the cells array, excluding the first cell
-
-
-        ]
+        ];
     }
 
     function createCellIndex(cell, colIndex, rowIndex, borderStyle, key) {
@@ -281,18 +233,16 @@ export default function Controale({
                 column={colIndex}
                 row={rowIndex}
             />
-        )
+        );
     }
 
     function deleteRow(row) {
-        var newR = controls.filter((linie) => {
-            return controls.indexOf(linie) !== Number(row) - 1
-        })
-        return setControls(newR)
+        const newR = controls.filter((linie) => controls.indexOf(linie) !== Number(row) - 1);
+        setControls(newR);
     }
 
     function deleteRowC(row) {
-        return setControls(controls.filter((linie) => linie !== row))
+        setControls(controls.filter((linie) => linie !== row));
     }
 
     function editRow(row) {
@@ -302,12 +252,17 @@ export default function Controale({
             controlId: controls[row].id,
             controlor: selectedPrelevId,
             definitiv: controls[row].definitiv,
-        })
+        });
     }
 
     function updateControlDefinitiv(row) {
-        let idC = Number(controls[row]['id'])
-        putDefinitivControlMeta(idC)
+        const idC = Number(controls[row]['id']);
+        putDefinitivControlMeta(idC).then(() => {
+            const updatedControls = controls.map((control, index) =>
+                index === row ? { ...control, definitiv: !control.definitiv } : control
+            );
+            setControls(updatedControls);
+        });
     }
 
     function createCellDelete(cell, colIndex, rowIndex, borderStyle) {
@@ -325,12 +280,11 @@ export default function Controale({
                 deleteRow={deleteRow}
                 editRow={editRow}
             />
-        )
+        );
     }
 
     function createCell(cell, colIndex, rowIndex, borderStyle, definitiv, key) {
-        let columnInput = columns[colIndex].input
-        columnInput += `-${rowIndex}-${colIndex}`
+        const columnInput = `${columns[colIndex].input}-${rowIndex}-${colIndex}`;
         if (typeof cell === 'object') {
             return (
                 <CellControale
@@ -349,7 +303,7 @@ export default function Controale({
                     editRow={editRow}
                     updateControlDefinitiv={updateControlDefinitiv}
                 />
-            )
+            );
         }
         return (
             <CellControale
@@ -367,32 +321,32 @@ export default function Controale({
                 editRow={editRow}
                 updateControlDefinitiv={updateControlDefinitiv}
             />
-        )
+        );
     }
 
     function _createBorderStyles(i, length) {
         return {
             borderRightWidth: length - 1 > i ? 0.5 : 0,
-        }
+        };
     }
 
     function _calculateCellWidths(widths) {
-        const widthFlexs = []
+        const widthFlexs = [];
         for (let i = 0; i < widths.length; i++) {
-            widthFlexs.push(widths.length * (widths[i] * 0.01))
+            widthFlexs.push(widths.length * (widths[i] * 0.01));
         }
-        return widthFlexs
+        return widthFlexs;
     }
 
     const onChange = (event, selectedDate) => {
-        const currentDate = selectedDate || datac
-        setDatac(currentDate)
-        setShow(false)
-    }
+        const currentDate = selectedDate || datac;
+        setDatac(currentDate);
+        setShow(false);
+    };
 
     const renderHeader = () => (
         <>
-            <Text style={{fontSize: 20, color: 'tomato'}}>
+            <Text style={{ fontSize: 20, color: 'tomato' }}>
                 BUNA ZIUA {selectedPrelevName}!
             </Text>
             <TouchableOpacity
@@ -403,11 +357,10 @@ export default function Controale({
                     borderRadius: 10,
                 }}
                 onPress={async () => {
-                    const isConnected = await checkConnection();
-                    if (isConnected) {
+                    if (checkConnection()) {
                         navigation.navigate('ScanPaper');
                     } else {
-                        Alert.alert('No Internet', 'Please check your internet connection and try again.');
+                        Alert.alert('Fara conexune internet', 'Nu aveti conexune internet.');
                     }
                 }}
             >
@@ -415,18 +368,18 @@ export default function Controale({
                     ADAUGA CONTROL
                 </Text>
             </TouchableOpacity>
-            <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <View style={{flex: 1, height: 2, backgroundColor: 'black'}} />
-                <Text style={{width: 150, textAlign: 'center', fontSize: 22}}>Lista Controale</Text>
-                <View style={{flex: 1, height: 2, backgroundColor: 'black'}} />
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ flex: 1, height: 2, backgroundColor: 'black' }} />
+                <Text style={{ width: 150, textAlign: 'center', fontSize: 22 }}>Lista Controale</Text>
+                <View style={{ flex: 1, height: 2, backgroundColor: 'black' }} />
             </View>
         </>
     );
 
     return (
-        <View style={{flex: 1}}>
-            <ScrollView style={{flex: 1}}>
-                <Text style={{fontSize: 20, color: 'tomato'}}>
+        <View style={{ flex: 1 }}>
+            <ScrollView style={{ flex: 1 }}>
+                <Text style={{ fontSize: 20, color: 'tomato' }}>
                     BUNA ZIUA {selectedPrelevName}!
                 </Text>
                 <TouchableOpacity
@@ -438,62 +391,46 @@ export default function Controale({
                         borderRadius: 10,
                     }}
                     onPress={() => {
-                        navigation.navigate('ScanPaper')
+                        navigation.navigate('ScanPaper');
                     }}
                 >
-                    <Text
-                        style={{
-                            color: 'white',
-                            fontSize: 24,
-                            textAlign: 'center',
-                        }}
-                    >
+                    <Text style={{ color: 'white', fontSize: 24, textAlign: 'center' }}>
                         ADAUGA CONTROL
                     </Text>
                 </TouchableOpacity>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <View
-                        style={{flex: 1, height: 2, backgroundColor: 'black'}}
-                    />
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ flex: 1, height: 2, backgroundColor: 'black' }} />
                     <View>
-                        <Text
-                            style={{
-                                width: 150,
-                                textAlign: 'center',
-                                fontSize: 22,
-                            }}
-                        >
+                        <Text style={{ width: 150, textAlign: 'center', fontSize: 22 }}>
                             Lista Controale
                         </Text>
                     </View>
-                    <View
-                        style={{flex: 1, height: 2, backgroundColor: 'black'}}
-                    />
+                    <View style={{ flex: 1, height: 2, backgroundColor: 'black' }} />
                 </View>
-                <View style={[Style.container, style, {minHeight: cellHeight}]}>
-                    <View style={{flex: 1}}>
-                        <View style={{flex: 1, flexDirection: 'column'}}>
+                <View style={[Style.container, style, { minHeight: cellHeight }]}>
+                    <View style={{ flex: 1 }}>
+                        <View style={{ flex: 1, flexDirection: 'column' }}>
                             <View style={[Style.row, customStyles.row]}>
                                 {createColumns(columns)}
                             </View>
-                            {createRows(controls)}
+                            {createRows()}
                             {renderFilterOptions}
                         </View>
                     </View>
                 </View>
             </ScrollView>
         </View>
-    )
+    );
 }
+
 Controale.defaultProps = {
     controls: [],
-
     borders: false,
     headerBorders: false,
     style: {},
     customStyles: {},
     cellHeight: 40,
-}
+};
 
 Controale.propTypes = {
     cellHeight: PropTypes.number,
@@ -503,4 +440,4 @@ Controale.propTypes = {
     navigation: PropTypes.object,
     borders: PropTypes.bool,
     headerBorders: PropTypes.bool,
-}
+};

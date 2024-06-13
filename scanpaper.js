@@ -52,7 +52,6 @@ export default function ScanPaper() {
 
     // Request Camera Permission
     useEffect(() => {
-        checkConnection();
         askForCameraPermission()
     }, [])
 
