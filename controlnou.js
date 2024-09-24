@@ -76,6 +76,7 @@ async function saveCSV(linii, ferma, datac) {
         const csvData = linii.map(row => {
             return [row[0].value, row[2], datac, row[1].value].join(",");
         }).join("\n");
+
         const timestamp = getTimestamp();
         const baseFileName = `${ferma}_${datac}_export_${timestamp}`;
         const extension = '.csv';
