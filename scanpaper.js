@@ -56,22 +56,16 @@ export default function ScanPaper() {
     }, [])
 
     function handleBarCodeScanned({data}) {
-        playSound()
-        const ferma = data.slice(8)
+        playSound();
+        const ferma = data.slice(8);
         const datacontr = data
             .slice(0, 8)
-            .replace(/(\d{4})(\d{2})(\d{2})/g, '$1-$2-$3')
-        setText('Ferma ' + ferma + '\nData ' + datacontr)
-        setRoferma(ferma)
-        setDatac(datacontr)
-        setScanned(true)
-        setScaneaza(false)
-    }
-
-    function scannedfunc() {
-        console.log(scanned + ' vvvvvvvvvvvvvvvvvvvvvv')
-
-        return undefined
+            .replace(/(\d{4})(\d{2})(\d{2})/g, '$1-$2-$3');
+        setText('Ferma ' + ferma + '\nData ' + datacontr);
+        setRoferma(ferma);
+        setDatac(datacontr);
+        setScanned(true);
+        setScaneaza(false);
     }
 
     function existent(text) {
@@ -97,26 +91,32 @@ export default function ScanPaper() {
         )
     }
 
+    function handleNavigation() {
+        navigation.navigate('ControlNou', {
+            datac: datac,
+            ferma: roferma,
+            controlor: selectedPrelevId,
+            definitiv: false,
+        });
+        setScanned(false);
+        setScaneaza(false);
+        setText(''); // Clear the scanned text
+    }
+
     return (
         <ScrollView style={{flex: 1}}>
             <View style={Style.containerBarCode}>
-                <View
-                    style={{
-                        flex: 1,
-                    }}
-                >
+                <View style={{flex: 1}}>
                     <View style={{flex: 1}}>
                         <View style={Style.barcodeboxFerma}>
-                            {scaneaza && (
+                            {scaneaza && !scanned && ( // only show the scanner if scaneaza is true and nothing has been scanned yet
                                 <BarCodeScanner
                                     barCodeTypes={["code128"]}
                                     onBarCodeScanned={
-                                        scanned
-                                            ? scannedfunc
-                                            : handleBarCodeScanned
+                                        scanned ? undefined : handleBarCodeScanned
                                     }
                                     style={{width: 500, height: 500}}
-                                ></BarCodeScanner>
+                                />
                             )}
                         </View>
 
@@ -130,8 +130,8 @@ export default function ScanPaper() {
                                 marginTop: 20,
                             }}
                             onPress={() => {
-                                setScanned(false)
-                                setScaneaza(true)
+                                setScanned(false); // Reset scanned state to allow re-scanning
+                                setScaneaza(true);  // Start scanning again
                             }}
                         >
                             <Text
@@ -140,7 +140,6 @@ export default function ScanPaper() {
                                     fontSize: 28,
                                 }}
                             >
-                                {' '}
                                 Scaneaza foaia control{' '}
                                 <FontAwesome5
                                     size={30}
@@ -150,6 +149,7 @@ export default function ScanPaper() {
                             </Text>
                         </TouchableOpacity>
                     </View>
+
                     {existent(text) ? (
                         <Modal
                             isVisible={text !== ''}
@@ -166,14 +166,7 @@ export default function ScanPaper() {
                                     minHeight: 100,
                                     backgroundColor: '#2196f3',
                                 }}
-                                onPress={() => {
-                                    navigation.navigate('ControlNou', {
-                                        datac: datac,
-                                        ferma: roferma,
-                                        controlor: selectedPrelevId,
-                                        definitiv: false,
-                                    })
-                                }}
+                                onPress={handleNavigation}
                             >
                                 <Text
                                     style={{
@@ -192,7 +185,7 @@ export default function ScanPaper() {
                                     backgroundColor: 'red',
                                 }}
                                 onPress={() => {
-                                    setText('')
+                                    setText('');
                                 }}
                             >
                                 <Text
@@ -221,7 +214,7 @@ export default function ScanPaper() {
                                     backgroundColor: 'red',
                                 }}
                                 onPress={() => {
-                                    setText('')
+                                    setText('');
                                 }}
                             >
                                 <Text
@@ -236,13 +229,11 @@ export default function ScanPaper() {
                             </TouchableOpacity>
                         </Modal>
                     )}
-                    {/* </Collapsible> */}
                 </View>
             </View>
         </ScrollView>
-    )
+    );
 }
-
 ControlNou.defaultProps = {
     values: [],
     emptyRows: 1,

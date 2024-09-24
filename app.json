@@ -15,7 +15,8 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.genprel"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,8 +24,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.genprel",
-      "versionCode": 5
-
+      "versionCode": 7
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -56,7 +56,7 @@ export default function Navigation() {
     useEffect(() => {
         // Listener for AppState to show version code when the app becomes active
         const appStateSubscription = AppState.addEventListener('change', nextAppState => {
-            if (nextAppState === 'active' && versionCode < 3) {
+            if (nextAppState === 'active' && versionCode < 7) {
                 Alert.alert('Actual version code: ' + versionCode);
             }
         });

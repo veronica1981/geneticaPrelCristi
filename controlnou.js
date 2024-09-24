@@ -25,7 +25,7 @@ import Column from './lib/Column';
 import {
     deleteControls,
     getControls,
-    saveControlMeta,
+    saveControlMeta, saveControlsService,
 } from './lib/services/Services';
 import Style from './style';
 import CellDeleteButton from './lib/CellEditButton';
@@ -55,6 +55,16 @@ async function requestDirectoryPermission() {
     }
 }
 
+const getTimestamp = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}${month}${day}_${hours}${minutes}`;
+};
+
 async function saveCSV(linii, ferma, datac) {
     const directoryUri = await requestDirectoryPermission();
     if (!directoryUri) {
@@ -63,14 +73,13 @@ async function saveCSV(linii, ferma, datac) {
     }
 
     try {
-        // Create CSV data
-
         const csvData = linii.map(row => {
-            return [row[0].value, datac.split("-").reverse().join("/"), row[1].value].join(",");
+            return [row[0].value, row[2], datac, row[1].value].join(",");
         }).join("\n");
-
-        // Define the file name
-        const fileName = `${ferma}_${datac}_control.csv`; // Unique file name
+        const timestamp = getTimestamp();
+        const baseFileName = `${ferma}_${datac}_export_${timestamp}`;
+        const extension = '.csv';
+        let fileName = baseFileName + extension;
 
         // Create the file in the selected directory
         const fileUri = await StorageAccessFramework.createFileAsync(directoryUri, fileName, 'application/csv');
@@ -89,56 +98,6 @@ async function saveCSV(linii, ferma, datac) {
     }
 }
 
-
-async function saveControls() {
-    if (await checkConnection()) {
-        const controlId = route.params.controlId;
-        var liniiD = linii.map((e) => e[0].value);
-        var duplicates = liniiD.filter(function (value, index, self) {
-            return (
-                self.indexOf(value) !== self.lastIndexOf(value) &&
-                self.indexOf(value) === index
-            );
-        });
-
-        if (duplicates.length > 0) {
-            Alert.alert('Crotalii duplicate   ' + duplicates, '', [
-                {
-                    text: 'OK',
-                    style: 'cancel',
-                    onPress: () => {
-                    },
-                },
-            ]);
-            return;
-        }
-
-        try {
-            if (!controlId && !saved) {
-                await saveControlMeta(route.params.ferma, route.params.datac, selectedPrelevId, linii);
-                setSaved(true);
-            } else {
-                await deleteControls(linii, controlId);
-            }
-
-            setHasChanges(false);
-            console.log("Before success alert");
-            Alert.alert('Salvarea s-a efectuat.', '', [
-                {
-                    text: 'OK',
-                    onPress: () => {
-                    },
-                    style: 'cancel',
-                },
-            ]);
-        } catch (error) {
-            Alert.alert('Eroare la salvare: ' + error.message);
-        }
-    } else {
-        await saveCSV(linii, route.params.ferma, route.params.datac);
-        Alert.alert('Nu există conexiune la internet. Datele au fost salvate ca CSV.');
-    }
-}
 
 const columns = [
     {
@@ -222,39 +181,33 @@ export default function ControlNou({
     const [hasChanges, setHasChanges] = useState(false);
     const [saved, setSaved] = useState(false);
     const [loading, setloading] = useState(false);
-    const [isConnected, setIsConnected] = useState(false);
     const navigation = useNavigation();
     const {selectedPrelev} = useContext(PrelevContext);
     const {id: selectedPrelevId} = selectedPrelev;
 
     useEffect(() => {
-        const checkInternetConnection = async () => {
-            const connectionStatus = await checkConnection();
-            setIsConnected(connectionStatus);
+        const fetchControls = async () => {
+            if (route.params.controlId) {
+                setloading(true); // Assume loading starts here
+                try {
+                    const items = await getControls(route.params.controlId);
+                    if (items.length > 0) {
+                        setLinii(items.map((item) => [
+                            { value: item['crot'], editable: true },
+                            { value: item['cant'], editable: true },
+                            item['codbare'],
+                        ]));
+                    }
+                } catch (error) {
+                    Alert.alert("Nu s-a putut incarca controlul:", error.toString());
+                } finally {
+                    setloading(false); // Ensure loading is set to false even on error
+                }
+            }
         };
 
-        checkInternetConnection();
-    }, []);
-
-    useEffect(() => {
-        if (route.params.controlId) {
-            setloading(true); // Assume loading starts here
-            getControls(route.params.controlId).then((items) => {
-                if (items.length > 0) {
-                    setLinii(items.map((item) => [
-                        {value: item['crot'], editable: true},
-                        {value: item['cant'], editable: true},
-                        item['codbare'],
-                    ]));
-                }
-                setloading(false); // Loading ends here
-            }).catch((error) => {
-                // This catches any errors thrown during the fetch operation
-                setloading(false); // Ensure loading is set to false even on error
-                Alert.alert("Nu s-a putut incarca controlul:", error.toString());
-            });
-        }
-    }, [route.params.controlId]); // This effect depends on route.params.controlId
+        fetchControls();
+    }, [route.params.controlId]);
 
     async function playSound() {
         const {sound} = await Audio.Sound.createAsync(
@@ -300,29 +253,44 @@ export default function ControlNou({
             }
 
             try {
+                console.log("Checking controlId and saved status", controlId, saved);
+
                 if (!controlId && !saved) {
-                    await saveControlMeta(route.params.ferma, route.params.datac, selectedPrelevId, linii);
+                    const contrid = await saveControlMeta(route.params.ferma, route.params.datac, selectedPrelevId, linii);
+                    await saveControlsService(linii, contrid);
+
                     setSaved(true);
                 } else {
                     await deleteControls(linii, controlId);
                 }
 
                 setHasChanges(false);
-                console.log("Before success alert");
+
                 Alert.alert('Salvarea s-a efectuat.', '', [
                     {
                         text: 'OK',
                         onPress: () => {
+                            console.log("Success alert OK pressed");
                         },
                         style: 'cancel',
                     },
                 ]);
             } catch (error) {
-                Alert.alert('Eroare la salvare, probabil nu aveti conexiune internet. Salvati controlul prin butonul CSV ca sa nu pierdeti datele.');
+                console.error("Error during save/delete process:", error);
+                Alert.alert(error.message, 'Eroare la salvare, probabil nu aveti conexiune internet. Salvati controlul prin butonul CSV ca sa nu pierdeti datele.');
             }
         } else {
-            await saveCSV(linii, route.params.ferma, route.params.datac);
-            Alert.alert('Nu există conexiune la internet. Datele au fost salvate ca CSV.');
+
+            Alert.alert('Nu există conexiune la internet. Doriti ca datele sa fie salvate ca CSV.', '', [
+                {
+                    text: 'OK',
+                    onPress: async () => {
+                        await saveCSV(linii, route.params.ferma, route.params.datac);
+                    },
+                    style: 'cancel',
+                },
+            ]);
+
         }
     }
 
@@ -726,7 +694,7 @@ export default function ControlNou({
                     >
                         {route.params.definitiv == false ? (
                             <View style={Style.barcodebox}>
-                                {scaneaza && isConnected && (
+                                {scaneaza && (
                                     <BarCodeScanner
                                         barCodeTypes={["code128"]}
                                         onBarCodeScanned={scanned ? scannedfunc : handleBarCodeScanned}
@@ -741,35 +709,35 @@ export default function ControlNou({
                         ) : (
                             <View></View>
                         )}
-                        {isConnected && (
-                            <TouchableOpacity
+
+                        <TouchableOpacity
+                            style={{
+                                backgroundColor: 'tomato',
+                                borderRadius: 30,
+                                justifyContent: 'center',
+                                flex: 0.9,
+                            }}
+                            onPress={() => {
+                                setScanned(false);
+                                setScaneaza(true);
+                            }}
+                        >
+                            <Text
                                 style={{
-                                    backgroundColor: 'tomato',
-                                    borderRadius: 30,
-                                    justifyContent: 'center',
-                                    flex: 0.9,
-                                }}
-                                onPress={() => {
-                                    setScanned(false);
-                                    setScaneaza(true);
+                                    color: 'white',
+                                    fontSize: 28,
                                 }}
                             >
-                                <Text
-                                    style={{
-                                        color: 'white',
-                                        fontSize: 28,
-                                    }}
-                                >
-                                    {' '}
-                                    Scanează{' '}
-                                    <FontAwesome5
-                                        size={30}
-                                        color="white"
-                                        name="barcode"
-                                    />
-                                </Text>
-                            </TouchableOpacity>
-                        )}
+                                {' '}
+                                Scanează{' '}
+                                <FontAwesome5
+                                    size={30}
+                                    color="white"
+                                    name="barcode"
+                                />
+                            </Text>
+                        </TouchableOpacity>
+
                     </View>
 
                     {existent(text) ? (
@@ -870,104 +838,104 @@ export default function ControlNou({
                     )}
                     {/* </Collapsible> */}
                 </View>
-                {isConnected && (
-                    <View
+
+                <View
+                    style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                    }}
+                >
+                    <TouchableOpacity
                         style={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
+                            backgroundColor: '#2196f3',
+                            borderRadius: 10,
+                            padding: 1,
+                        }}
+                        onPress={() => {
+                            setHasChanges(true);
+                            var arr = linii.sort((a, b) => {
+                                return Number(a[2]) - Number(b[2]);
+                            });
+                            if (codManual) {
+                                let cod = [
+                                    {value: '', editable: true},
+                                    {value: '', editable: true},
+                                    parseInt(codManual),
+                                ];
+
+                                let newLines = [];
+                                if (parseInt(liniiNoi) > 1) {
+                                    for (var i = 0; i < parseInt(liniiNoi); i++) {
+                                        newLines.push([
+                                            {value: '', editable: true},
+                                            {value: '', editable: true},
+                                            parseInt(codManual) + i,
+                                        ]);
+                                    }
+                                } else {
+                                    newLines.push(cod);
+                                }
+
+                                setLinii([...arr, ...newLines]);
+                                setCodManual('');
+                                setLiniiNoi('1');
+                            } else {
+                                let newLines = [];
+                                if (linii.length > 0) {
+                                    for (var i = 0; i < parseInt(liniiNoi); i++) {
+                                        newLines.push([
+                                            {value: '', editable: true},
+                                            {value: '', editable: true},
+                                            parseInt(linii[linii.length - 1][2] + i + 1),
+                                        ]);
+                                    }
+                                }
+
+                                setLinii([...arr, ...newLines]);
+                                setLiniiNoi('1');
+                            }
                         }}
                     >
-                        <TouchableOpacity
+                        <Text
                             style={{
-                                backgroundColor: '#2196f3',
-                                borderRadius: 10,
-                                padding: 1,
-                            }}
-                            onPress={() => {
-                                setHasChanges(true);
-                                var arr = linii.sort((a, b) => {
-                                    return Number(a[2]) - Number(b[2]);
-                                });
-                                if (codManual) {
-                                    let cod = [
-                                        { value: '', editable: true },
-                                        { value: '', editable: true },
-                                        parseInt(codManual),
-                                    ];
-
-                                    let newLines = [];
-                                    if (parseInt(liniiNoi) > 1) {
-                                        for (var i = 0; i < parseInt(liniiNoi); i++) {
-                                            newLines.push([
-                                                { value: '', editable: true },
-                                                { value: '', editable: true },
-                                                parseInt(codManual) + i,
-                                            ]);
-                                        }
-                                    } else {
-                                        newLines.push(cod);
-                                    }
-
-                                    setLinii([...arr, ...newLines]);
-                                    setCodManual('');
-                                    setLiniiNoi('1');
-                                } else {
-                                    let newLines = [];
-                                    if (linii.length > 0) {
-                                        for (var i = 0; i < parseInt(liniiNoi); i++) {
-                                            newLines.push([
-                                                { value: '', editable: true },
-                                                { value: '', editable: true },
-                                                parseInt(linii[linii.length - 1][2] + i + 1),
-                                            ]);
-                                        }
-                                    }
-
-                                    setLinii([...arr, ...newLines]);
-                                    setLiniiNoi('1');
-                                }
+                                fontSize: 28,
+                                color: 'white',
+                                textAlign: 'center',
+                                textAlignVertical: 'center',
                             }}
                         >
-                            <Text
-                                style={{
-                                    fontSize: 28,
-                                    color: 'white',
-                                    textAlign: 'center',
-                                    textAlignVertical: 'center',
-                                }}
-                            >
-                                Adaugă
-                            </Text>
-                        </TouchableOpacity>
+                            Adaugă
+                        </Text>
+                    </TouchableOpacity>
 
-                        <TextInput
-                            minWidth={100}
-                            label="Urmatoarele"
-                            fontWeight="bold"
-                            keyboardType="decimal-pad"
-                            fontSize={30}
-                            textAlign="center"
-                            value={liniiNoi}
-                            onChangeText={(text) => {
-                                setLiniiNoi(text);
-                            }}
-                            type="outlined"
-                        />
-                        <TextInput
-                            minWidth={150}
-                            label="Cod bare"
-                            fontWeight="bold"
-                            keyboardType="decimal-pad"
-                            fontSize={30}
-                            textAlign="center"
-                            value={codManual}
-                            onChangeText={(text) => {
-                                setCodManual(text);
-                            }}
-                            type="outlined"
-                        />
-                    </View>
-                )}
+                    <TextInput
+                        minWidth={100}
+                        label="Urmatoarele"
+                        fontWeight="bold"
+                        keyboardType="decimal-pad"
+                        fontSize={30}
+                        textAlign="center"
+                        value={liniiNoi}
+                        onChangeText={(text) => {
+                            setLiniiNoi(text);
+                        }}
+                        type="outlined"
+                    />
+                    <TextInput
+                        minWidth={150}
+                        label="Cod bare"
+                        fontWeight="bold"
+                        keyboardType="decimal-pad"
+                        fontSize={30}
+                        textAlign="center"
+                        value={codManual}
+                        onChangeText={(text) => {
+                            setCodManual(text);
+                        }}
+                        type="outlined"
+                    />
+                </View>
+
                 <View>
                     <View
                         style={[
