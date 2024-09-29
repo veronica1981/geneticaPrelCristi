@@ -23,8 +23,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.genprel",
-      "versionCode": 7
+      "package": "com.geneticaprel",
+      "versionCode": 9
     },
     "web": {
       "favicon": "./assets/favicon.png"
