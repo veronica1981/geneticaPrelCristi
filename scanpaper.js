@@ -125,9 +125,10 @@ export default function ScanPaper() {
                                 backgroundColor: 'tomato',
                                 borderRadius: 30,
                                 justifyContent: 'center',
-                                flex: 0.9,
-                                height: 100,
+                                alignItems: 'center',  // Center text and icon horizontally
+                                paddingVertical: 10,   // Responsive padding instead of fixed height
                                 marginTop: 20,
+                                width: '90%',          // Responsive width relative to parent container
                             }}
                             onPress={() => {
                                 setScanned(false); // Reset scanned state to allow re-scanning
@@ -138,15 +139,16 @@ export default function ScanPaper() {
                                 style={{
                                     color: 'white',
                                     fontSize: 28,
+                                    textAlign: 'center',  // Center align text in case it wraps
                                 }}
                             >
                                 Scaneaza foaia control{' '}
-                                <FontAwesome5
-                                    size={30}
-                                    color="white"
-                                    name="barcode"
-                                />
                             </Text>
+                            <FontAwesome5
+                                size={30}
+                                color="white"
+                                name="barcode"
+                            />
                         </TouchableOpacity>
                     </View>
 
