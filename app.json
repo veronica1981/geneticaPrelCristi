@@ -24,7 +24,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.genprel",
-      "versionCode": 13
+      "versionCode": 14
     },
     "web": {
       "favicon": "./assets/icon.png"
