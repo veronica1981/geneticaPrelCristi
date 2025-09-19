@@ -1,7 +1,15 @@
 {
   "expo": {
     "plugins": [
-      ["expo-build-properties", { "android": { "kotlinVersion": "1.9.24", "usesCleartextTraffic": true } }]
+      ["expo-build-properties", {
+        "android": {
+          "compileSdkVersion": 35,
+          "targetSdkVersion": 35,
+          "buildToolsVersion": "35.0.0",
+          "kotlinVersion": "1.9.24",
+          "usesCleartextTraffic": true
+        }
+      }]
     ],
     "name": "GenPrelReactUltimate",
     "slug": "GenPrelReactUltimate",
