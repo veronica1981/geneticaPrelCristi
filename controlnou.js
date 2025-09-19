@@ -10,7 +10,7 @@ import {
     ActivityIndicator,
     Alert,
     Button,
-    KeyboardAvoidingView, Linking, PermissionsAndroid,
+    KeyboardAvoidingView, Linking,
     Platform,
     ScrollView,
     Text,
