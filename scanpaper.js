@@ -10,7 +10,6 @@ import ControlNou from './controlnou'
 import Style from './style'
 import {checkConnection} from './NaviUtil';
 import {PrelevContext} from './lib/PrelevContext';
-import { CameraView } from 'expo-camera';
 export default function ScanPaper() {
     const [sound, setSound] = useState(new Audio.Sound())
     const [text, setText] = useState('')
