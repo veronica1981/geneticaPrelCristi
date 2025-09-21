@@ -8,7 +8,8 @@
             "usesCleartextTraffic": true
           }
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "name": "GenPrelReactUltimate",
     "slug": "GenPrelReactUltimate",
