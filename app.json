@@ -1,5 +1,15 @@
 {
   "expo": {
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
     "name": "GenPrelReactUltimate",
     "slug": "GenPrelReactUltimate",
     "version": "1.0.0",
