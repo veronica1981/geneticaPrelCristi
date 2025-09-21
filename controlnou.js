@@ -1,7 +1,7 @@
 import {FontAwesome5} from '@expo/vector-icons';
 import {useNavigation} from '@react-navigation/native';
 import {Audio} from 'expo-av';
-import {BarCodeScanner} from 'expo-barcode-scanner';
+import { CameraView } from 'expo-camera';
 import PropTypes from 'prop-types';
 import React, {useContext, useEffect, useState} from 'react';
 import * as FileSystem from 'expo-file-system';
@@ -696,9 +696,12 @@ export default function ControlNou({
                         {route.params.definitiv == false ? (
                             <View style={Style.barcodebox}>
                                 {scaneaza && (
-                                    <BarCodeScanner
-                                        barCodeTypes={["code128"]}
-                                        onBarCodeScanned={scanned ? scannedfunc : handleBarCodeScanned}
+
+                                    <CameraView
+                                        barcodeScannerSettings={{
+                                            barcodeTypes: ["code128"],
+                                        }}
+                                        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
                                         style={{
                                             width: 250,
                                             height: 250,

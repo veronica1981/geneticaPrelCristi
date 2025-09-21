@@ -1,7 +1,7 @@
 import {FontAwesome5} from '@expo/vector-icons'
 import {useNavigation} from '@react-navigation/native'
 import {Audio} from 'expo-av'
-import {BarCodeScanner} from 'expo-barcode-scanner'
+import { CameraView } from 'expo-camera';
 import PropTypes from 'prop-types'
 import {React, useContext, useEffect, useState} from 'react'
 import {Button, ScrollView, Text, TouchableOpacity, View} from 'react-native'
