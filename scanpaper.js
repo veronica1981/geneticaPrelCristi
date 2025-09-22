@@ -1,7 +1,7 @@
 import {FontAwesome5} from '@expo/vector-icons'
 import {useNavigation} from '@react-navigation/native'
 import {Audio} from 'expo-av'
-import {BarCodeScanner} from 'expo-barcode-scanner'
+import { CameraView } from 'expo-camera';
 import PropTypes from 'prop-types'
 import {React, useContext, useEffect, useState} from 'react'
 import {Button, ScrollView, Text, TouchableOpacity, View} from 'react-native'
@@ -10,7 +10,6 @@ import ControlNou from './controlnou'
 import Style from './style'
 import {checkConnection} from './NaviUtil';
 import {PrelevContext} from './lib/PrelevContext';
-
 export default function ScanPaper() {
     const [sound, setSound] = useState(new Audio.Sound())
     const [text, setText] = useState('')
@@ -110,12 +109,13 @@ export default function ScanPaper() {
                     <View style={{flex: 1}}>
                         <View style={Style.barcodeboxFerma}>
                             {scaneaza && !scanned && ( // only show the scanner if scaneaza is true and nothing has been scanned yet
-                                <BarCodeScanner
-                                    barCodeTypes={["code128"]}
-                                    onBarCodeScanned={
-                                        scanned ? undefined : handleBarCodeScanned
-                                    }
-                                    style={{width: 500, height: 500}}
+                                <CameraView
+                                    style={{ width: 500, height: 500 }}
+                                    onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+                                    barcodeScannerSettings={{
+                                        // Specify barcode types
+                                        barcodeTypes: ["code128"],
+                                    }}
                                 />
                             )}
                         </View>

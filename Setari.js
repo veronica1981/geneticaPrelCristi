@@ -30,9 +30,12 @@ const Setari = () => {
                     setData(asociatii);
                     setAsoc(asociatii[0].id);
                 }
-            } catch (error) {
-                setError('Failed to fetch associations');
-                Alert.alert('Error', 'Failed to load associations');
+            } catch (e) {
+                const msg = 'Nu s-a putut chema serviciul. Eroare';
+                setError(msg);
+                setData([{ id: -1, name: msg, isPlaceholder: true }]); // <-- single-item list
+                setAsoc(undefined); // or remove selection
+                Alert.alert('Error', msg);
             } finally {
                 setIsLoad(false);
             }

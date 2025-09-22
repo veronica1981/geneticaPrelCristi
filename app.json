@@ -1,5 +1,19 @@
 {
   "expo": {
+    "expo": {
+      "jsEngine": "hermes"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      "expo-asset"
+    ],
     "name": "GenPrelReactUltimate",
     "slug": "GenPrelReactUltimate",
     "version": "1.0.0",
@@ -24,7 +38,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.genprel",
-      "versionCode": 14
+      "versionCode": 15
     },
     "web": {
       "favicon": "./assets/icon.png"
