@@ -1,5 +1,8 @@
 {
   "expo": {
+    "expo": {
+      "jsEngine": "hermes"
+    },
     "plugins": [
       [
         "expo-build-properties",
