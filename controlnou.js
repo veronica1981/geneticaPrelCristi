@@ -182,7 +182,6 @@ const values = [
     [{value: '', editable: true}, {value: '', editable: true}, 890756454],
 ];
 
-+
 export default function ControlNou({
                                        customStyles = {},
                                        style = {},
