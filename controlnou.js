@@ -465,8 +465,8 @@ export default function ControlNou({
             );
         });
         return [
-            route.params.definitiv == false ? createCellDelete('', 0, row, rowIndex, 0.5) : null,
-            createCellIndex('', 1, rowIndex, 0.5),
+            route.params.definitiv == false ? createCellDelete('', 0, row, rowIndex, _createBorderStyles(0, columns.length)) : null,
+            createCellIndex('', 1, rowIndex, _createBorderStyles(1, columns.length)),
             cells,
         ];
     }
