@@ -1,93 +1,68 @@
-import {FontAwesome5} from '@expo/vector-icons'
-import {useNavigation} from '@react-navigation/native'
-import {Audio} from 'expo-av'
-import { CameraView } from 'expo-camera';
-import PropTypes from 'prop-types'
-import {React, useContext, useEffect, useState} from 'react'
-import {Button, ScrollView, Text, TouchableOpacity, View} from 'react-native'
-import Modal from 'react-native-modal'
-import ControlNou from './controlnou'
-import Style from './style'
-import {checkConnection} from './NaviUtil';
-import {PrelevContext} from './lib/PrelevContext';
+import { FontAwesome5 } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { Audio } from 'expo-av';
+import { Camera, CameraView } from 'expo-camera';
+import PropTypes from 'prop-types';
+import React, { useContext, useEffect, useState } from 'react';
+import { Button, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import Modal from 'react-native-modal';
+
+import ControlNou from './controlnou';
+import Style from './style';
+import { PrelevContext } from './lib/PrelevContext';
+
 export default function ScanPaper() {
-    const [sound, setSound] = useState(new Audio.Sound())
-    const [text, setText] = useState('')
-    const [hasPermission, setHasPermission] = useState(null)
-    const [scaneaza, setScaneaza] = useState(false)
-    const [scanned, setScanned] = useState(false)
-    const [roferma, setRoferma] = useState()
-    const [datac, setDatac] = useState()
-    const navigation = useNavigation()
-    const {selectedPrelev} = useContext(PrelevContext);
-    const {id: selectedPrelevId} = selectedPrelev;
+    const [sound, setSound] = useState(null);
+    const [text, setText] = useState('');
+    const [hasPermission, setHasPermission] = useState(null);
+    const [scaneaza, setScaneaza] = useState(false);
+    const [scanned, setScanned] = useState(false);
+    const [roferma, setRoferma] = useState();
+    const [datac, setDatac] = useState();
 
+    const navigation = useNavigation();
+    const { selectedPrelev } = useContext(PrelevContext);
+    const { id: selectedPrelevId } = selectedPrelev;
+
+    // Load and play sound
     async function playSound() {
-        console.log('Loading Sound')
-        const {sound} = await Audio.Sound.createAsync(
+        const { sound } = await Audio.Sound.createAsync(
             require('./assets/beep.mp3')
-        )
-
-        setSound(sound)
-        console.log('Playing Sound')
-        await sound.playAsync()
+        );
+        setSound(sound);
+        await sound.playAsync();
     }
 
     useEffect(() => {
         return sound
             ? () => {
-                console.log('Unloading Sound')
-                sound.unloadAsync()
+                sound.unloadAsync();
             }
-            : undefined
-    }, [sound])
+            : undefined;
+    }, [sound]);
 
-    const askForCameraPermission = () => {
-        ;(async () => {
-            const {status} = await BarCodeScanner.requestPermissionsAsync()
-            setHasPermission(status === 'granted')
-        })()
-    }
-
-    // Request Camera Permission
+    // Ask for camera permission (expo-camera API)
     useEffect(() => {
-        askForCameraPermission()
-    }, [])
+        (async () => {
+            const { status } = await Camera.requestCameraPermissionsAsync();
+            setHasPermission(status === 'granted');
+        })();
+    }, []);
 
-    function handleBarCodeScanned({data}) {
+    // Handle scanned barcode
+    function handleBarCodeScanned({ data }) {
         playSound();
+
         const ferma = data.slice(8);
         const datacontr = data
             .slice(0, 8)
             .replace(/(\d{4})(\d{2})(\d{2})/g, '$1-$2-$3');
-        setText('Ferma ' + ferma + '\nData ' + datacontr);
+
+        setText(`Ferma ${ferma}\nData ${datacontr}`);
         setRoferma(ferma);
         setDatac(datacontr);
         setScanned(true);
         setScaneaza(false);
-    }
-
-    function existent(text) {
-        return text !== undefined
-    }
-
-    if (hasPermission === null) {
-        return (
-            <View style={Style.container}>
-                <Text>Requesting for camera permission</Text>
-            </View>
-        )
-    }
-    if (hasPermission === false) {
-        return (
-            <View style={Style.container}>
-                <Text style={{margin: 10}}>No access to camera</Text>
-                <Button
-                    title={'Allow Camera'}
-                    onPress={() => askForCameraPermission()}
-                />
-            </View>
-        )
     }
 
     function handleNavigation() {
@@ -99,22 +74,44 @@ export default function ScanPaper() {
         });
         setScanned(false);
         setScaneaza(false);
-        setText(''); // Clear the scanned text
+        setText('');
+    }
+
+    // Handle permission states
+    if (hasPermission === null) {
+        return (
+            <View style={Style.container}>
+                <Text>Requesting for camera permission…</Text>
+            </View>
+        );
+    }
+    if (hasPermission === false) {
+        return (
+            <View style={Style.container}>
+                <Text style={{ margin: 10 }}>No access to camera</Text>
+                <Button
+                    title="Allow Camera"
+                    onPress={async () => {
+                        const { status } = await Camera.requestCameraPermissionsAsync();
+                        setHasPermission(status === 'granted');
+                    }}
+                />
+            </View>
+        );
     }
 
     return (
-        <ScrollView style={{flex: 1}}>
+        <ScrollView style={{ flex: 1 }}>
             <View style={Style.containerBarCode}>
-                <View style={{flex: 1}}>
-                    <View style={{flex: 1}}>
+                <View style={{ flex: 1 }}>
+                    <View style={{ flex: 1 }}>
                         <View style={Style.barcodeboxFerma}>
-                            {scaneaza && !scanned && ( // only show the scanner if scaneaza is true and nothing has been scanned yet
+                            {scaneaza && !scanned && (
                                 <CameraView
                                     style={{ width: 500, height: 500 }}
                                     onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
                                     barcodeScannerSettings={{
-                                        // Specify barcode types
-                                        barcodeTypes: ["code128"],
+                                        barcodeTypes: ['code128'],
                                     }}
                                 />
                             )}
@@ -125,117 +122,86 @@ export default function ScanPaper() {
                                 backgroundColor: 'tomato',
                                 borderRadius: 30,
                                 justifyContent: 'center',
-                                alignItems: 'center',  // Center text and icon horizontally
-                                paddingVertical: 10,   // Responsive padding instead of fixed height
+                                alignItems: 'center',
+                                paddingVertical: 10,
                                 marginTop: 20,
-                                width: '90%',          // Responsive width relative to parent container
+                                width: '90%',
                             }}
                             onPress={() => {
-                                setScanned(false); // Reset scanned state to allow re-scanning
-                                setScaneaza(true);  // Start scanning again
+                                setScanned(false);
+                                setScaneaza(true);
                             }}
                         >
                             <Text
                                 style={{
                                     color: 'white',
                                     fontSize: 28,
-                                    textAlign: 'center',  // Center align text in case it wraps
+                                    textAlign: 'center',
                                 }}
                             >
-                                Scaneaza foaia control{' '}
+                                Scaneaza foaia control
                             </Text>
-                            <FontAwesome5
-                                size={30}
-                                color="white"
-                                name="barcode"
-                            />
+                            <FontAwesome5 size={30} color="white" name="barcode" />
                         </TouchableOpacity>
                     </View>
 
-                    {existent(text) ? (
-                        <Modal
-                            isVisible={text !== ''}
-                            style={{
-                                flexDirection: 'column',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                flex: 0.8,
-                            }}
-                        >
-                            <TouchableOpacity
-                                style={{
-                                    width: '100%',
-                                    minHeight: 100,
-                                    backgroundColor: '#2196f3',
-                                }}
-                                onPress={handleNavigation}
-                            >
-                                <Text
+                    <Modal
+                        isVisible={text !== ''}
+                        style={{
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            flex: 0.8,
+                        }}
+                    >
+                        {text !== '' && (
+                            <>
+                                <TouchableOpacity
                                     style={{
-                                        color: 'white',
-                                        textAlign: 'center',
-                                        fontSize: 30,
+                                        width: '100%',
+                                        minHeight: 100,
+                                        backgroundColor: '#2196f3',
                                     }}
+                                    onPress={handleNavigation}
                                 >
-                                    {text}
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={{
-                                    width: '100%',
-                                    height: 70,
-                                    backgroundColor: 'red',
-                                }}
-                                onPress={() => {
-                                    setText('');
-                                }}
-                            >
-                                <Text
+                                    <Text
+                                        style={{
+                                            color: 'white',
+                                            textAlign: 'center',
+                                            fontSize: 30,
+                                        }}
+                                    >
+                                        {text}
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
                                     style={{
-                                        color: 'white',
-                                        textAlign: 'center',
-                                        fontSize: 30,
+                                        width: '100%',
+                                        height: 70,
+                                        backgroundColor: 'red',
                                     }}
-                                ></Text>
-                            </TouchableOpacity>
-                        </Modal>
-                    ) : (
-                        <Modal
-                            isVisible={text !== ''}
-                            style={{
-                                flexDirection: 'row',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                flex: 0.8,
-                            }}
-                        >
-                            <TouchableOpacity
-                                style={{
-                                    width: 200,
-                                    height: 100,
-                                    backgroundColor: 'red',
-                                }}
-                                onPress={() => {
-                                    setText('');
-                                }}
-                            >
-                                <Text
-                                    style={{
-                                        color: 'white',
-                                        textAlign: 'center',
-                                        fontSize: 30,
-                                    }}
+                                    onPress={() => setText('')}
                                 >
-                                    {text}
-                                </Text>
-                            </TouchableOpacity>
-                        </Modal>
-                    )}
+                                    <Text
+                                        style={{
+                                            color: 'white',
+                                            textAlign: 'center',
+                                            fontSize: 30,
+                                        }}
+                                    >
+                                        Cancel
+                                    </Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+                    </Modal>
                 </View>
             </View>
         </ScrollView>
     );
 }
+
+// Props for ControlNou, kept here as you had before
 ControlNou.defaultProps = {
     values: [],
     emptyRows: 1,
@@ -244,7 +210,7 @@ ControlNou.defaultProps = {
     style: {},
     customStyles: {},
     cellHeight: 40,
-}
+};
 
 ControlNou.propTypes = {
     columns: PropTypes.array,
@@ -256,4 +222,4 @@ ControlNou.propTypes = {
     customStyles: PropTypes.object,
     borders: PropTypes.bool,
     headerBorders: PropTypes.bool,
-}
+};
