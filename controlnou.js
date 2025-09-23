@@ -363,7 +363,7 @@ export default function ControlNou({
 
     useEffect(() => {
         const requestPermissions = async () => {
-            const cameraPermission = await BarCodeScanner.requestPermissionsAsync();
+            const cameraPermission = await Camera.requestCameraPermissionsAsync();
             setHasPermission(cameraPermission.status === 'granted');
         };
 
