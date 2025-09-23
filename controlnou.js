@@ -1,7 +1,7 @@
 import {FontAwesome5} from '@expo/vector-icons';
 import {useNavigation} from '@react-navigation/native';
 import {Audio} from 'expo-av';
-import { Camera, CameraView } from 'expo-camera';
+import {Camera, CameraView} from 'expo-camera';
 import PropTypes from 'prop-types';
 import React, {useContext, useEffect, useState} from 'react';
 import * as FileSystem from 'expo-file-system';
@@ -182,13 +182,14 @@ const values = [
     [{value: '', editable: true}, {value: '', editable: true}, 890756454],
 ];
 
++
 export default function ControlNou({
-                                       customStyles,
-                                       style,
-                                       cellHeight,
-                                       headerBorders,
+                                       customStyles = {},
+                                       style = {},
+                                       cellHeight = 40,
+                                       headerBorders = false,
                                        onColumnChange,
-                                       borders,
+                                       borders = false,
                                        onCellChange,
                                        route,
                                    }) {
@@ -431,7 +432,7 @@ export default function ControlNou({
         let count = 0;
         let arr = rows.map((row, i) => {
             const isLastRow = rows.length - 1 === i;
-            const rowStyle = [Style.row, customStyles.row, {}];
+            const rowStyle = [Style.row, customStyles?.row, {}];
 
             return (
                 <View key={row[2]} style={rowStyle}>
@@ -448,7 +449,7 @@ export default function ControlNou({
         let addColIndex = 0;
         var cells = row.map((cell, colIndex) => {
             colIndex = colIndex + addColIndex;
-            if (cell.hasOwnProperty('span')) {
+            if (cell && typeof cell === 'object' && Object.prototype.hasOwnProperty.call(cell, 'span')) {
                 addColIndex += cell.span - 1;
             }
             let borderStyle = {};
@@ -728,9 +729,9 @@ export default function ControlNou({
                             <View style={Style.barcodebox}>
                                 {scaneaza && isConnected && (
                                     <CameraView
-                                        barcodeScannerSettings={{ barcodeTypes: ['code128'] }}
+                                        barcodeScannerSettings={{barcodeTypes: ['code128']}}
                                         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-                                        style={{ width: 250, height: 250 }}
+                                        style={{width: 250, height: 250}}
                                     />
 
                                 )}
@@ -887,8 +888,8 @@ export default function ControlNou({
                                 });
                                 if (codManual) {
                                     let cod = [
-                                        { value: '', editable: true },
-                                        { value: '', editable: true },
+                                        {value: '', editable: true},
+                                        {value: '', editable: true},
                                         parseInt(codManual),
                                     ];
 
@@ -896,8 +897,8 @@ export default function ControlNou({
                                     if (parseInt(liniiNoi) > 1) {
                                         for (var i = 0; i < parseInt(liniiNoi); i++) {
                                             newLines.push([
-                                                { value: '', editable: true },
-                                                { value: '', editable: true },
+                                                {value: '', editable: true},
+                                                {value: '', editable: true},
                                                 parseInt(codManual) + i,
                                             ]);
                                         }
@@ -913,8 +914,8 @@ export default function ControlNou({
                                     if (linii.length > 0) {
                                         for (var i = 0; i < parseInt(liniiNoi); i++) {
                                             newLines.push([
-                                                { value: '', editable: true },
-                                                { value: '', editable: true },
+                                                {value: '', editable: true},
+                                                {value: '', editable: true},
                                                 parseInt(linii[linii.length - 1][2] + i + 1),
                                             ]);
                                         }
@@ -987,7 +988,7 @@ export default function ControlNou({
                                     padding: 10,
                                 }}
                             >
-                                <View style={[Style.row, customStyles.row]}>
+                                <View style={[Style.row, customStyles?.row]}>
                                     {createColumns(columns)}
                                 </View>
                                 {createRows(linii)}
