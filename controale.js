@@ -387,53 +387,47 @@ export default function Controale({
     );
 
     return (
-        <View style={{ flex: 1 }}>
-            <ScrollView style={{ flex: 1 }}>
-                <Text style={{ fontSize: 20, color: 'tomato' }}>
-                    BUNA ZIUA {selectedPrelevName}!
-                </Text>
-                <TouchableOpacity
-                    style={{
-                        margin: 10,
-                        flex: 0.1,
-                        backgroundColor: '#2196f3',
-                        minHeight: 70,
-                        borderRadius: 10,
-                    }}
-                    onPress={() => {
-                        navigation.navigate('ScanPaper');
-                    }}
-                >
-                    <Text style={{ color: 'white', fontSize: 24, textAlign: 'center' }}>
-                        ADAUGA CONTROL
+        <FlatList
+            data={selecteddataset ? groupedData[selecteddataset] ?? [] : controls}
+            keyExtractor={(item) => `row-${item.id}`}
+            renderItem={renderItem}
+            ListHeaderComponent={
+                <>
+                    <Text style={{ fontSize: 20, color: 'tomato' }}>
+                        BUNA ZIUA {selectedPrelevName}!
                     </Text>
-                </TouchableOpacity>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={{ flex: 1, height: 2, backgroundColor: 'black' }} />
-                    <View>
+                    <TouchableOpacity
+                        style={{
+                            margin: 10,
+                            backgroundColor: '#2196f3',
+                            minHeight: 70,
+                            borderRadius: 10,
+                        }}
+                        onPress={() => navigation.navigate('ScanPaper')}
+                    >
+                        <Text style={{ color: 'white', fontSize: 24, textAlign: 'center' }}>
+                            ADAUGA CONTROL
+                        </Text>
+                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{ flex: 1, height: 2, backgroundColor: 'black' }} />
                         <Text style={{ width: 150, textAlign: 'center', fontSize: 22 }}>
                             Lista Controale
                         </Text>
+                        <View style={{ flex: 1, height: 2, backgroundColor: 'black' }} />
                     </View>
-                    <View style={{ flex: 1, height: 2, backgroundColor: 'black' }} />
-                </View>
 
-                <View style={[Style.container, style, { minHeight: cellHeight }]}>
-                    <View style={{ flex: 1 }}>
-                        <View style={{ flex: 1, flexDirection: 'column' }}>
-                            {/* ✅ safe access for customStyles.row */}
-                            <View style={[Style.row, customStyles?.row]}>
-                                {createColumns(columns)}
-                            </View>
-
-                            {createRows()}
-
-                            {renderFilterOptions}
-                        </View>
+                    {/* Table header */}
+                    <View style={[Style.row, customStyles?.row]}>
+                        {createColumns(columns)}
                     </View>
-                </View>
-            </ScrollView>
-        </View>
+
+                    {/* Filter buttons */}
+                    {renderFilterOptions}
+                </>
+            }
+            contentContainerStyle={{ paddingBottom: 50 }}
+        />
     );
 }
 
