@@ -301,7 +301,8 @@ export default function ControlNou({
 
             try {
                 if (!controlId && !saved) {
-                    await saveControlMeta(route.params.ferma, route.params.datac, selectedPrelevId, linii);
+                    const dataControl = await saveControlMeta(route.params.ferma, route.params.datac, selectedPrelevId, linii);
+                    await deleteControls(linii, dataControl.id);
                     setSaved(true);
                 } else {
                     await deleteControls(linii, controlId);

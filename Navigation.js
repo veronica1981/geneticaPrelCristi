@@ -1,15 +1,18 @@
-import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+// Navigation.tsx (or Navigation.js)
+
 import React, { useEffect } from 'react';
+import { Alert, AppState, Text, TouchableOpacity } from 'react-native';
+import { NavigationContainer, useNavigationContainerRef, CommonActions } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+
 import Controale from './controale';
 import ControlNou from './controlnou';
 import ScanPaper from './scanpaper';
 import Setari from './Setari';
 import styles from './style';
-import { TouchableOpacity, Text, Alert, AppState } from 'react-native';
 import { PrelevProvider } from './lib/PrelevContext';
 
-// 🔑 Dependencies for version check
+// 🔑 Version check
 import VersionCheck from 'react-native-version-check-expo';
 
 const Stack = createStackNavigator();
@@ -35,12 +38,25 @@ function MyStack() {
                 component={ControlNou}
                 options={({ route, navigation }) => ({
                     headerPressColor: '#fff',
-                    title: 'C ' + route.params.ferma + ' ' + route.params.datac,
-                    headerTitleStyle: {
-                        fontSize: 16,
-                    },
+                    title: `C ${route.params.ferma} ${route.params.datac}`,
+                    headerTitleStyle: { fontSize: 16 },
+                    // Custom left that POPs instead of navigating to avoid duplicating Controale
                     headerLeft: () => (
-                        <TouchableOpacity onPress={() => navigation.navigate('Controale')}>
+                        <TouchableOpacity
+                            onPress={() => {
+                                if (navigation.canGoBack()) {
+                                    navigation.goBack();
+                                } else {
+                                    // Fallback if opened directly (no back stack)
+                                    navigation.dispatch(
+                                        CommonActions.reset({
+                                            index: 0,
+                                            routes: [{ name: 'Controale' }],
+                                        })
+                                    );
+                                }
+                            }}
+                        >
                             <Text style={styles.buttonNavi2}>INAPOI CONTROALE</Text>
                         </TouchableOpacity>
                     ),
@@ -53,17 +69,18 @@ function MyStack() {
 export default function Navigation() {
     const navigationRef = useNavigationContainerRef();
 
-    // 🔎 Function to check app store for a newer version
+    // 🔎 Check store for newer version when app comes to foreground
     async function checkForStoreUpdate() {
         try {
-            const currentVersion = VersionCheck.getCurrentVersion(); // local app version (from app.json/build)
-            const latestVersion = await VersionCheck.getLatestVersion(); // latest from store
+            const currentVersion = VersionCheck.getCurrentVersion();
+            const latestVersion = await VersionCheck.getLatestVersion();
             const updateNeeded = await VersionCheck.needUpdate({
                 currentVersion,
                 latestVersion,
             });
 
-            const isNeeded = typeof updateNeeded === 'object' ? updateNeeded?.isNeeded : !!updateNeeded;
+            const isNeeded =
+                typeof updateNeeded === 'object' ? !!updateNeeded?.isNeeded : !!updateNeeded;
 
             if (isNeeded) {
                 Alert.alert(
@@ -76,18 +93,16 @@ export default function Navigation() {
                 );
             }
         } catch (e) {
-            console.log('Version check failed:', e.message);
+            console.log('Version check failed:', e?.message ?? e);
         }
     }
 
     useEffect(() => {
-        // run on app foreground
         const sub = AppState.addEventListener('change', (nextState) => {
             if (nextState === 'active') {
                 checkForStoreUpdate();
             }
         });
-
         return () => sub.remove();
     }, []);
 
