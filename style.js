@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     buttonNavi: {
         elevation: 5,
         margin: 2,
-        padding: 8,
+        padding: 2,
         fontSize: 24,
         textAlign: 'center',
         backgroundColor: '#2196f3',
