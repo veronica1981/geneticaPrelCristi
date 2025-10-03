@@ -1,7 +1,11 @@
 import { registerRootComponent } from 'expo';
 import 'react-native-gesture-handler';
 import Navigation from './Navigation';
-
+import { BackHandler } from 'react-native';
+if (typeof BackHandler.removeEventListener !== 'function') {
+    // @ts-ignore
+    BackHandler.removeEventListener = () => {};
+}
 import { enableScreens } from 'react-native-screens';
 enableScreens();
 

@@ -23,7 +23,7 @@ import {TextInput} from 'react-native-paper';
 import Cell from './lib/Cell';
 import Column from './lib/Column';
 import {
-    deleteControls,
+    deleteAndSaveControls,
     getControls,
     saveControlMeta,
 } from './lib/services/Services';
@@ -118,7 +118,7 @@ async function saveControls() {
                 await saveControlMeta(route.params.ferma, route.params.datac, selectedPrelevId, linii);
                 setSaved(true);
             } else {
-                await deleteControls(linii, controlId);
+                await deleteAndSaveControls(linii, controlId);
             }
 
             setHasChanges(false);
@@ -302,10 +302,12 @@ export default function ControlNou({
             try {
                 if (!controlId && !saved) {
                     const dataControl = await saveControlMeta(route.params.ferma, route.params.datac, selectedPrelevId, linii);
-                    await deleteControls(linii, dataControl.id);
+                    if (linii.length> 0) {
+                        await deleteAndSaveControls(linii, dataControl);
+                    }
                     setSaved(true);
                 } else {
-                    await deleteControls(linii, controlId);
+                    await deleteAndSaveControls(linii, controlId);
                 }
 
                 setHasChanges(false);
