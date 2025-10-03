@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert, useColorScheme } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,6 +17,8 @@ const Setari = () => {
 
     const { selectedPrelev, setSelectedPrelev } = useContext(PrelevContext);
     const { id: selectedPrelevId, name: selectedPrelevName } = selectedPrelev;
+    const scheme = useColorScheme();
+    const isDark = scheme === 'dark';
     const text = isDark ? '#FFFFFF' : '#111111';
     const navigation = useNavigation();
 
