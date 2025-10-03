@@ -91,9 +91,10 @@ const Setari = () => {
                     onValueChange={(itemValue) => setAsoc(itemValue)}
                     style={styles.picker}
                     enabled={!isLoad}
+                    dropdownIconColor="#333"
                 >
                     {data.map((asoc) => (
-                        <Picker.Item key={asoc.id} label={asoc.nume} value={asoc.id} />
+                        <Picker.Item key={asoc.id} label={asoc.nume} value={asoc.id} color="#333"/>
                     ))}
                 </Picker>
             )}
@@ -106,9 +107,10 @@ const Setari = () => {
                     }}
                     style={styles.picker}
                     enabled={!isLoad}
+                    dropdownIconColor="#333"
                 >
                     {prelev.map((item) => (
-                        <Picker.Item key={item.id} label={item.nume} value={item.id} />
+                        <Picker.Item key={item.id} label={item.nume} value={item.id} color="#333"/>
                     ))}
                 </Picker>
             )}
