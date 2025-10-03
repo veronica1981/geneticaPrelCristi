@@ -5,6 +5,7 @@
         "expo-build-properties",
         {
           "android": {
+            "usesCleartextTraffic": true,
             "compileSdkVersion": 35,
             "targetSdkVersion": 35,
             "minSdkVersion": 24,
@@ -38,7 +39,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.genprel",
-      "versionCode": 18
+      "versionCode": 19
     },
     "web": {
       "favicon": "./assets/icon.png"

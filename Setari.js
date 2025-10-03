@@ -17,7 +17,7 @@ const Setari = () => {
 
     const { selectedPrelev, setSelectedPrelev } = useContext(PrelevContext);
     const { id: selectedPrelevId, name: selectedPrelevName } = selectedPrelev;
-
+    const text = isDark ? '#FFFFFF' : '#111111';
     const navigation = useNavigation();
 
     useEffect(() => {
@@ -94,7 +94,7 @@ const Setari = () => {
                     dropdownIconColor="#333"
                 >
                     {data.map((asoc) => (
-                        <Picker.Item key={asoc.id} label={asoc.nume} value={asoc.id} color="#333"/>
+                        <Picker.Item key={asoc.id} label={asoc.nume} value={asoc.id} color={text}/>
                     ))}
                 </Picker>
             )}
@@ -110,7 +110,7 @@ const Setari = () => {
                     dropdownIconColor="#333"
                 >
                     {prelev.map((item) => (
-                        <Picker.Item key={item.id} label={item.nume} value={item.id} color="#333"/>
+                        <Picker.Item key={item.id} label={item.nume} value={item.id} color={text}/>
                     ))}
                 </Picker>
             )}

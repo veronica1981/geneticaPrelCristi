@@ -1,8 +1,8 @@
 // Navigation.tsx (or Navigation.js)
 
-import React, { useEffect } from 'react';
-import { Alert, AppState, Text, TouchableOpacity } from 'react-native';
-import { NavigationContainer, useNavigationContainerRef, CommonActions } from '@react-navigation/native';
+import React, {useEffect} from 'react';
+import {Alert, AppState, Text, TouchableOpacity} from 'react-native';
+import {NavigationContainer, useNavigationContainerRef, CommonActions} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 
 import Controale from './controale';
@@ -55,42 +55,46 @@ function MyStack() {
 }
 
 export default function Navigation() {
-    const navigationRef = useNavigationContainerRef();
+    const REQUIRED_BUILD = 19; // the build you’re publishing
 
-    // 🔎 Check store for newer version when app comes to foreground
-    async function checkForStoreUpdate() {
+    async function checkForForcedUpdate() {
         try {
-            const currentVersion = VersionCheck.getCurrentVersion();
-            const latestVersion = await VersionCheck.getLatestVersion();
-            const updateNeeded = await VersionCheck.needUpdate({
-                currentVersion,
-                latestVersion,
-            });
+            const currentBuild = Number(VersionCheck.getCurrentBuildNumber()); // installed build (e.g., 17, 18, 19)
+            if (Number.isFinite(currentBuild) && currentBuild < REQUIRED_BUILD) {
+                // Grab a store URL (fallback if fetch fails)
+                let storeUrl;
+                try {
+                    const res = await VersionCheck.needUpdate(); // we only use storeUrl from this
+                    storeUrl = res?.storeUrl;
+                } catch {
+                }
 
-            const isNeeded =
-                typeof updateNeeded === 'object' ? !!updateNeeded?.isNeeded : !!updateNeeded;
-
-            if (isNeeded) {
                 Alert.alert(
-                    'Actualizare disponibilă',
-                    `Versiune nouă în Store: ${latestVersion}\nVersiunea instalată: ${currentVersion}`,
+                    'Actualizare necesară',
+                    `Ai versiunea ${currentBuild}. Pentru a continua, actualizează la ${REQUIRED_BUILD}.`,
                     [
-                        { text: 'Mai târziu', style: 'cancel' },
-                        { text: 'Actualizează acum', onPress: () => VersionCheck.goToAppStore() },
-                    ]
+                        {text: 'Mai târziu', style: 'cancel'},
+                        {
+                            text: 'Actualizează acum',
+                            onPress: () => {
+                                if (storeUrl) Linking.openURL(storeUrl);
+                            },
+                        },
+                    ],
                 );
             }
         } catch (e) {
-            console.log('Version check failed:', e?.message ?? e);
+            console.log('Build check failed:', e?.message ?? String(e));
         }
     }
 
+// Example: run when app returns to foreground
     useEffect(() => {
-        const sub = AppState.addEventListener('change', (nextState) => {
-            if (nextState === 'active') {
-                checkForStoreUpdate();
-            }
+        const sub = AppState.addEventListener('change', (s) => {
+            if (s === 'active') checkForForcedUpdate();
         });
+        // optional: check once on mount
+        checkForForcedUpdate();
         return () => sub.remove();
     }, []);
 
