@@ -1,7 +1,7 @@
 // Navigation.tsx (or Navigation.js)
 
-import React, {useEffect} from 'react';
-import {Alert, AppState, Text, TouchableOpacity} from 'react-native';
+import React, {useEffect, useRef} from 'react';
+import {Alert, AppState, Text, TouchableOpacity, Linking} from 'react-native';
 import {NavigationContainer, useNavigationContainerRef, CommonActions} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 
@@ -12,8 +12,8 @@ import Setari from './Setari';
 import styles from './style';
 import {PrelevProvider} from './lib/PrelevContext';
 
-// 🔑 Version check
 import VersionCheck from 'react-native-version-check-expo';
+
 
 const Stack = createStackNavigator();
 
@@ -55,25 +55,31 @@ function MyStack() {
 }
 
 export default function Navigation() {
+    const navigationRef = useNavigationContainerRef(); // ✅ define it
     const REQUIRED_BUILD = 19; // the build you’re publishing
+    const lastPrompt = useRef(0);
 
     async function checkForForcedUpdate() {
         try {
-            const currentBuild = Number(VersionCheck.getCurrentBuildNumber()); // installed build (e.g., 17, 18, 19)
+            const currentBuild = Number(VersionCheck.getCurrentBuildNumber()); // installed build
             if (Number.isFinite(currentBuild) && currentBuild < REQUIRED_BUILD) {
-                // Grab a store URL (fallback if fetch fails)
+                // Try to get storeUrl (we only use the URL)
                 let storeUrl;
                 try {
-                    const res = await VersionCheck.needUpdate(); // we only use storeUrl from this
+                    const res = await VersionCheck.needUpdate();
                     storeUrl = res?.storeUrl;
-                } catch {
-                }
+                } catch {}
+
+                // throttle prompts
+                const now = Date.now();
+                if (now - lastPrompt.current < 10_000) return;
+                lastPrompt.current = now;
 
                 Alert.alert(
                     'Actualizare necesară',
                     `Ai versiunea ${currentBuild}. Pentru a continua, actualizează la ${REQUIRED_BUILD}.`,
                     [
-                        {text: 'Mai târziu', style: 'cancel'},
+                        { text: 'Mai târziu', style: 'cancel' },
                         {
                             text: 'Actualizează acum',
                             onPress: () => {
@@ -88,12 +94,11 @@ export default function Navigation() {
         }
     }
 
-// Example: run when app returns to foreground
+    // Run when app returns to foreground + once on mount
     useEffect(() => {
         const sub = AppState.addEventListener('change', (s) => {
             if (s === 'active') checkForForcedUpdate();
         });
-        // optional: check once on mount
         checkForForcedUpdate();
         return () => sub.remove();
     }, []);
@@ -101,7 +106,7 @@ export default function Navigation() {
     return (
         <PrelevProvider>
             <NavigationContainer ref={navigationRef}>
-                <MyStack/>
+                <MyStack />
             </NavigationContainer>
         </PrelevProvider>
     );
