@@ -56,7 +56,7 @@ function MyStack() {
 
 export default function Navigation() {
     const navigationRef = useNavigationContainerRef(); // ✅ define it
-    const REQUIRED_BUILD = 19; // the build you’re publishing
+    const REQUIRED_BUILD = 23; // the build you’re publishing
     const lastPrompt = useRef(0);
 
     async function checkForForcedUpdate() {

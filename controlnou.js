@@ -89,57 +89,6 @@ async function saveCSV(linii, ferma, datac) {
     }
 }
 
-
-async function saveControls() {
-    if (await checkConnection()) {
-        const controlId = route.params.controlId;
-        var liniiD = linii.map((e) => e[0].value);
-        var duplicates = liniiD.filter(function (value, index, self) {
-            return (
-                self.indexOf(value) !== self.lastIndexOf(value) &&
-                self.indexOf(value) === index
-            );
-        });
-
-        if (duplicates.length > 0) {
-            Alert.alert('Crotalii duplicate   ' + duplicates, '', [
-                {
-                    text: 'OK',
-                    style: 'cancel',
-                    onPress: () => {
-                    },
-                },
-            ]);
-            return;
-        }
-
-        try {
-            if (!controlId && !saved) {
-                await saveControlMeta(route.params.ferma, route.params.datac, selectedPrelevId, linii);
-                setSaved(true);
-            } else {
-                await deleteAndSaveControls(linii, controlId);
-            }
-
-            setHasChanges(false);
-            console.log("Before success alert");
-            Alert.alert('Salvarea s-a efectuat.', '', [
-                {
-                    text: 'OK',
-                    onPress: () => {
-                    },
-                    style: 'cancel',
-                },
-            ]);
-        } catch (error) {
-            Alert.alert('Eroare la salvare: ' + error.message);
-        }
-    } else {
-        await saveCSV(linii, route.params.ferma, route.params.datac);
-        Alert.alert('Nu există conexiune la internet. Datele au fost salvate ca CSV.');
-    }
-}
-
 const columns = [
     {
         value: '',
@@ -220,7 +169,7 @@ export default function ControlNou({
     const [collapsed, setCollapsed] = useState(true);
     const [codManual, setCodManual] = useState('');
     const [hasChanges, setHasChanges] = useState(false);
-    const [saved, setSaved] = useState(false);
+    const [savedControlId, setSavedControlId] = useState(null); // id of a new control after its first save
     const [loading, setloading] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
     const navigation = useNavigation();
@@ -300,14 +249,14 @@ export default function ControlNou({
             }
 
             try {
-                if (!controlId && !saved) {
+                if (!controlId && !savedControlId) {
                     const dataControl = await saveControlMeta(route.params.ferma, route.params.datac, selectedPrelevId, linii);
                     if (linii.length> 0) {
                         await deleteAndSaveControls(linii, dataControl);
                     }
-                    setSaved(true);
+                    setSavedControlId(dataControl);
                 } else {
-                    await deleteAndSaveControls(linii, controlId);
+                    await deleteAndSaveControls(linii, controlId ?? savedControlId);
                 }
 
                 setHasChanges(false);

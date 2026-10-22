@@ -35,7 +35,7 @@ const Setari = () => {
             } catch (e) {
                 const msg = 'Nu s-a putut chema serviciul. Eroare';
                 setError(msg);
-                setData([{ id: -1, name: msg, isPlaceholder: true }]); // <-- single-item list
+                setData([{ id: -1, nume: msg, isPlaceholder: true }]); // <-- single-item list
                 setAsoc(undefined); // or remove selection
                 Alert.alert('Error', msg);
             } finally {
