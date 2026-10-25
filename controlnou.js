@@ -10,6 +10,7 @@ import {
     ActivityIndicator,
     Alert,
     Button,
+    Keyboard,
     KeyboardAvoidingView, Linking, PermissionsAndroid,
     Platform,
     ScrollView,
@@ -154,7 +155,20 @@ export default function ControlNou({
     );
 
     const [scanned, setScanned] = useState(false);
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [text, setText] = useState('');
+
+    // targetSdk 36 forces edge-to-edge on Android 16, so the window no longer resizes for the keyboard.
+    // Pad the scroll content by the keyboard height so the last rows can still be scrolled above it.
+    useEffect(() => {
+        if (Platform.OS !== 'android') return;
+        const show = Keyboard.addListener('keyboardDidShow', (e) => setKeyboardHeight(e.endCoordinates.height));
+        const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+        return () => {
+            show.remove();
+            hide.remove();
+        };
+    }, []);
     const [sound, setSound] = useState(new Audio.Sound());
     const [rows, setRows] = useState(values.length);
     const [linii, setLinii] = useState([]);
@@ -590,7 +604,11 @@ export default function ControlNou({
         );
     }
     return (
-        <ScrollView style={{flex: 1}}>
+        <ScrollView
+            style={{flex: 1}}
+            contentContainerStyle={{paddingBottom: keyboardHeight}}
+            keyboardShouldPersistTaps="handled"
+        >
             {route.params.definitiv == false ? (
                 <TouchableOpacity
                     style={{

@@ -70,6 +70,8 @@ const styles = StyleSheet.create({
         width: '100%',
         textAlign: 'center',
         fontSize: 16,
+        // Android's default TextInput padding clips the text inside the 40px-high cells
+        paddingVertical: 0,
     },
     maintext: {
         fontSize: 16,
